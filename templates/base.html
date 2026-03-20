@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Stock News Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div class="flex items-center py-4">
+                        <span class="font-semibold text-gray-700 text-lg">HK Stock News Dashboard</span>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="/" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'dashboard' %}text-green-500 border-b-2 border-green-500{% endif %}">Dashboard</a>
+                        <a href="/news" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'news' %}text-green-500 border-b-2 border-green-500{% endif %}">News Feed</a>
+                        <a href="/stocks" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'stocks' %}text-green-500 border-b-2 border-green-500{% endif %}">Stock Frequency</a>
+                        <a href="/infos" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'infos' %}text-green-500 border-b-2 border-green-500{% endif %}">Info Frequency</a>
+                    </div>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button class="outline-none mobile-menu-button">
+                        <svg class="w-6 h-6 text-gray-500 hover:text-green-500" x-show="!showMenu" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div class="hidden mobile-menu">
+            <ul class="">
+                <li><a href="/" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Dashboard</a></li>
+                <li><a href="/news" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">News Feed</a></li>
+                <li><a href="/stocks" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Stock Frequency</a></li>
+                <li><a href="/infos" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Info Frequency</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-lg mt-8">
+        <div class="max-w-7xl mx-auto py-4 px-4">
+            <p class="text-center text-gray-500 text-sm">HK Stock News Dashboard - Data from Gelonghui</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

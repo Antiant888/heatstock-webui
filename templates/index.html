@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Total News</div>
+            <div class="mt-1 text-3xl font-semibold text-gray-900">{{ total_count }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Top Stock</div>
+            <div class="mt-1 text-xl font-semibold text-gray-900">
+                {% if stock_frequency %}
+                {{ stock_frequency[0].code }} - {{ stock_frequency[0].frequency }} mentions
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Top Category</div>
+            <div class="mt-1 text-xl font-semibold text-gray-900">
+                {% if info_frequency %}
+                {{ info_frequency[0].name }} - {{ info_frequency[0].frequency }} mentions
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Last Updated</div>
+            <div class="mt-1 text-lg font-semibold text-gray-900">
+                {% if recent_news %}
+                {{ recent_news[0].timestamp }}
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Daily News Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">News Per Day (Last 30 Days)</h3>
+            <canvas id="dailyChart" height="200"></canvas>
+        </div>
+        
+        <!-- Top Stocks Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Stocks</h3>
+            <canvas id="stocksChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Categories Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Info Categories</h3>
+        <canvas id="infosChart" height="100"></canvas>
+    </div>
+
+    <!-- Recent News -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Recent News</h3>
+        </div>
+        <ul class="divide-y divide-gray-200">
+            {% for news in recent_news %}
+            <li class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ news.title }}</p>
+                        <p class="text-sm text-gray-500 truncate">{{ news.content }}</p>
+                        <div class="mt-1 flex items-center space-x-2">
+                            {% for stock in news.stocks %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">{{ stock }}</span>
+                            {% endfor %}
+                            {% for info in news.infos %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{{ info }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-shrink-0 text-sm text-gray-500">
+                        {{ news.timestamp }}
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+// Initialize charts with data from backend
+const dailyCounts = JSON.parse('{{ daily_counts|safe }}');
+const stockFrequency = JSON.parse('{{ stock_frequency|safe }}');
+const infoFrequency = JSON.parse('{{ info_frequency|safe }}');
+
+// Daily Chart
+new Chart(document.getElementById('dailyChart'), {
+    type: 'line',
+    data: {
+        labels: dailyCounts.map(d => d.date),
+        datasets: [{
+            label: 'News Count',
+            data: dailyCounts.map(d => d.count),
+            borderColor: 'rgb(34, 197, 94)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+
+// Stocks Chart
+new Chart(document.getElementById('stocksChart'), {
+    type: 'bar',
+    data: {
+        labels: stockFrequency.map(s => s.code),
+        datasets: [{
+            label: 'Mentions',
+            data: stockFrequency.map(s => s.frequency),
+            backgroundColor: 'rgba(59, 130, 246, 0.5)'
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y'
+    }
+});
+
+// Infos Chart
+new Chart(document.getElementById('infosChart'), {
+    type: 'bar',
+    data: {
+        labels: infoFrequency.map(i => i.name),
+        datasets: [{
+            label: 'Mentions',
+            data: infoFrequency.map(i => i.frequency),
+            backgroundColor: 'rgba(16, 185, 129, 0.5)'
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y'
+    }
+});
+</script>
+{% endblock %}

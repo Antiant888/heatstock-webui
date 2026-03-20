@@ -1,0 +1,325 @@
+# -*- coding: utf-8 -*-
+"""
+FastAPI Web UI for Gelonghui HK Stock News Dashboard
+
+Provides web interface for viewing news, stock frequency analysis,
+and info category frequency analysis.
+
+Author: jasperchan
+"""
+
+import json
+from collections import Counter
+from datetime import datetime, timezone, timedelta
+from fastapi import FastAPI, Request, Query
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from sqlalchemy import func, desc
+from database import (
+    create_database_engine,
+    get_session,
+    HKStockLive,
+    timestamp_to_hkt,
+    safe_json_loads,
+    extract_stock_codes,
+    extract_info_names
+)
+
+# Initialize FastAPI app
+app = FastAPI(title="HK Stock News Dashboard", version="1.0.0")
+
+# Mount static files and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Database engine
+engine = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on startup"""
+    global engine
+    engine = create_database_engine()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connection on shutdown"""
+    global engine
+    if engine:
+        engine.dispose()
+
+# ────────────────────────────────────────────────
+# HTML Page Routes
+# ────────────────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    """Dashboard overview page"""
+    session = get_session(engine)
+    try:
+        # Get total news count
+        total_count = session.query(HKStockLive).count()
+        
+        # Get news per day (last 30 days)
+        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1000)
+        daily_counts = session.query(
+            func.date(func.from_unixtime(HKStockLive.create_timestamp / 1000)).label('date'),
+            func.count(HKStockLive.id).label('count')
+        ).filter(
+            HKStockLive.create_timestamp >= thirty_days_ago
+        ).group_by('date').order_by('date').all()
+        
+        # Get top 10 stocks
+        stock_frequency = get_stock_frequency(session, limit=10)
+        
+        # Get top 10 info categories
+        info_frequency = get_info_frequency(session, limit=10)
+        
+        # Get recent news (last 5)
+        recent_news = session.query(HKStockLive)\
+            .order_by(desc(HKStockLive.create_timestamp))\
+            .limit(5)\
+            .all()
+        
+        recent_news_data = []
+        for news in recent_news:
+            recent_news_data.append({
+                'id': news.id,
+                'title': news.title or 'Untitled',
+                'content': (news.content[:100] + '...') if news.content and len(news.content) > 100 else (news.content or ''),
+                'timestamp': timestamp_to_hkt(news.create_timestamp),
+                'stocks': extract_stock_codes(news.related_stocks),
+                'infos': extract_info_names(news.related_infos)
+            })
+        
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "total_count": total_count,
+            "daily_counts": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
+            "stock_frequency": json.dumps(stock_frequency),
+            "info_frequency": json.dumps(info_frequency),
+            "recent_news": recent_news_data
+        })
+    finally:
+        session.close()
+
+@app.get("/news", response_class=HTMLResponse)
+async def news_page(request: Request):
+    """News feed page"""
+    return templates.TemplateResponse("news.html", {"request": request})
+
+@app.get("/stocks", response_class=HTMLResponse)
+async def stocks_page(request: Request):
+    """Stock frequency analysis page"""
+    session = get_session(engine)
+    try:
+        stock_frequency = get_stock_frequency(session, limit=50)
+        return templates.TemplateResponse("stocks.html", {
+            "request": request,
+            "stock_frequency": json.dumps(stock_frequency)
+        })
+    finally:
+        session.close()
+
+@app.get("/infos", response_class=HTMLResponse)
+async def infos_page(request: Request):
+    """Info category frequency analysis page"""
+    session = get_session(engine)
+    try:
+        info_frequency = get_info_frequency(session, limit=50)
+        return templates.TemplateResponse("infos.html", {
+            "request": request,
+            "info_frequency": json.dumps(info_frequency)
+        })
+    finally:
+        session.close()
+
+# ────────────────────────────────────────────────
+# JSON API Routes
+# ────────────────────────────────────────────────
+
+@app.get("/api/news")
+async def api_news(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: str = Query(None),
+    stock: str = Query(None),
+    info: str = Query(None),
+    date_from: str = Query(None),
+    date_to: str = Query(None)
+):
+    """API endpoint for news data with pagination and filters"""
+    session = get_session(engine)
+    try:
+        query = session.query(HKStockLive)
+        
+        # Apply search filter
+        if search:
+            query = query.filter(
+                (HKStockLive.title.contains(search)) |
+                (HKStockLive.content.contains(search))
+            )
+        
+        # Apply stock filter
+        if stock:
+            query = query.filter(HKStockLive.related_stocks.contains(stock))
+        
+        # Apply info filter
+        if info:
+            query = query.filter(HKStockLive.related_infos.contains(info))
+        
+        # Apply date filters
+        if date_from:
+            try:
+                from datetime import datetime as dt
+                date_from_ts = int(dt.strptime(date_from, "%Y-%m-%d").timestamp() * 1000)
+                query = query.filter(HKStockLive.create_timestamp >= date_from_ts)
+            except ValueError:
+                pass
+        
+        if date_to:
+            try:
+                from datetime import datetime as dt
+                date_to_ts = int((dt.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)).timestamp() * 1000)
+                query = query.filter(HKStockLive.create_timestamp < date_to_ts)
+            except ValueError:
+                pass
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        news_items = query.order_by(desc(HKStockLive.create_timestamp))\
+            .offset((page - 1) * page_size)\
+            .limit(page_size)\
+            .all()
+        
+        # Format response
+        items = []
+        for news in news_items:
+            items.append({
+                'id': news.id,
+                'title': news.title or 'Untitled',
+                'content': news.content or '',
+                'timestamp': timestamp_to_hkt(news.create_timestamp),
+                'stocks': extract_stock_codes(news.related_stocks),
+                'infos': extract_info_names(news.related_infos),
+                'route': news.route or ''
+            })
+        
+        return {
+            'items': items,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total + page_size - 1) // page_size
+        }
+    finally:
+        session.close()
+
+@app.get("/api/stocks/frequency")
+async def api_stocks_frequency(limit: int = Query(50, ge=1, le=200)):
+    """API endpoint for stock code frequency"""
+    session = get_session(engine)
+    try:
+        return get_stock_frequency(session, limit=limit)
+    finally:
+        session.close()
+
+@app.get("/api/infos/frequency")
+async def api_infos_frequency(limit: int = Query(50, ge=1, le=200)):
+    """API endpoint for info category frequency"""
+    session = get_session(engine)
+    try:
+        return get_info_frequency(session, limit=limit)
+    finally:
+        session.close()
+
+@app.get("/api/stats/overview")
+async def api_stats_overview():
+    """API endpoint for dashboard statistics"""
+    session = get_session(engine)
+    try:
+        total_count = session.query(HKStockLive).count()
+        
+        # Get news per day (last 30 days)
+        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1000)
+        daily_counts = session.query(
+            func.date(func.from_unixtime(HKStockLive.create_timestamp / 1000)).label('date'),
+            func.count(HKStockLive.id).label('count')
+        ).filter(
+            HKStockLive.create_timestamp >= thirty_days_ago
+        ).group_by('date').order_by('date').all()
+        
+        return {
+            'total_count': total_count,
+            'daily_counts': [{'date': str(d[0]), 'count': d[1]} for d in daily_counts],
+            'top_stocks': get_stock_frequency(session, limit=10),
+            'top_infos': get_info_frequency(session, limit=10)
+        }
+    finally:
+        session.close()
+
+# ────────────────────────────────────────────────
+# Helper Functions
+# ────────────────────────────────────────────────
+
+def get_stock_frequency(session, limit=50):
+    """Get stock code frequency from database"""
+    # Get all news with related_stocks
+    news_items = session.query(HKStockLive.related_stocks)\
+        .filter(HKStockLive.related_stocks.isnot(None))\
+        .all()
+    
+    # Count stock codes
+    stock_counter = Counter()
+    for item in news_items:
+        if item[0]:
+            stocks = safe_json_loads(item[0])
+            for stock in stocks:
+                code = stock.get('code', '')
+                name = stock.get('name', '')
+                if code:
+                    stock_counter[f"{code}|{name}"] += 1
+    
+    # Return top N
+    result = []
+    for stock_key, count in stock_counter.most_common(limit):
+        code, name = stock_key.split('|', 1)
+        result.append({
+            'code': code,
+            'name': name,
+            'frequency': count
+        })
+    return result
+
+def get_info_frequency(session, limit=50):
+    """Get info category frequency from database"""
+    # Get all news with related_infos
+    news_items = session.query(HKStockLive.related_infos)\
+        .filter(HKStockLive.related_infos.isnot(None))\
+        .all()
+    
+    # Count info names
+    info_counter = Counter()
+    for item in news_items:
+        if item[0]:
+            infos = safe_json_loads(item[0])
+            for info in infos:
+                name = info.get('name', '')
+                if name:
+                    info_counter[name] += 1
+    
+    # Return top N
+    result = []
+    for name, count in info_counter.most_common(limit):
+        result.append({
+            'name': name,
+            'frequency': count
+        })
+    return result
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

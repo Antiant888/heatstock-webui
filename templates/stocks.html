@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Stock Frequency Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Stock Code Frequency (Top 50)</h3>
+        <canvas id="stockChart" height="400"></canvas>
+    </div>
+
+    <!-- Stock Frequency Table -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Stock Frequency Table</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Code</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Table rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Stock frequency data from backend
+const stockFrequency = JSON.parse('{{ stock_frequency|safe }}');
+
+// Render chart
+new Chart(document.getElementById('stockChart'), {
+    type: 'bar',
+    data: {
+        labels: stockFrequency.map(s => s.code),
+        datasets: [{
+            label: 'Mentions',
+            data: stockFrequency.map(s => s.frequency),
+            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        scales: {
+            x: { beginAtZero: true }
+        },
+        plugins: {
+            legend: { display: false }
+        }
+    }
+});
+
+// Render table
+const tableBody = document.getElementById('stockTableBody');
+stockFrequency.forEach((stock, index) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${index + 1}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${stock.code}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${stock.name}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${stock.frequency}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <a href="/news?stock=${stock.code}" class="text-green-600 hover:text-green-900">View News</a>
+        </td>
+    `;
+    tableBody.appendChild(row);
+});
+</script>
+{% endblock %}
