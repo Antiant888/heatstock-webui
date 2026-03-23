@@ -116,7 +116,7 @@ async def dashboard(request: Request):
             "top_3_stocks": json.dumps(top_3_stocks),
             "info_frequency": json.dumps(info_frequency),
             "top_3_infos": json.dumps(top_3_infos),
-            "recent_news": recent_news_data
+            "recent_news_json": json.dumps(recent_news_data)
         })
     finally:
         session.close()

@@ -30,11 +30,7 @@
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-sm font-medium text-gray-500">Last Updated</div>
             <div class="mt-1 text-lg font-semibold text-gray-900">
-                {% if recent_news %}
-                <span id="relative-time" data-timestamp="{{ recent_news[0].create_timestamp }}"></span>
-                {% else %}
-                N/A
-                {% endif %}
+                <span id="relative-time">N/A</span>
             </div>
         </div>
     </div>
@@ -65,28 +61,8 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-medium text-gray-900">Recent News</h3>
         </div>
-        <ul class="divide-y divide-gray-200">
-            {% for news in recent_news %}
-            <li class="px-6 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate">{{ news.title }}</p>
-                        <p class="text-sm text-gray-500 truncate">{{ news.content }}</p>
-                        <div class="mt-1 flex items-center space-x-2">
-                            {% for stock in news.stocks %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">{{ stock }}</span>
-                            {% endfor %}
-                            {% for info in news.infos %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{{ info }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="ml-4 flex-shrink-0 text-sm text-gray-500">
-                        {{ news.timestamp }}
-                    </div>
-                </div>
-            </li>
-            {% endfor %}
+        <ul class="divide-y divide-gray-200" id="recent-news-list">
+            <!-- Populated by JavaScript -->
         </ul>
     </div>
 </div>
@@ -98,6 +74,7 @@ const stockFrequency = JSON.parse('{{ stock_frequency|safe }}');
 const infoFrequency = JSON.parse('{{ info_frequency|safe }}');
 const top3Stocks = JSON.parse('{{ top_3_stocks|safe }}');
 const top3Infos = JSON.parse('{{ top_3_infos|safe }}');
+const recentNews = JSON.parse('{{ recent_news_json|safe }}');
 
 // Populate Top 3 Stocks
 const topStocksList = document.getElementById('top-stocks-list');
@@ -178,5 +155,35 @@ new Chart(document.getElementById('infosChart'), {
         indexAxis: 'y'
     }
 });
+
+// Populate Recent News
+const recentNewsList = document.getElementById('recent-news-list');
+if (recentNews && recentNews.length > 0) {
+    recentNewsList.innerHTML = recentNews.map(news => `
+        <li class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">${news.title}</p>
+                    <p class="text-sm text-gray-500 truncate">${news.content}</p>
+                    <div class="mt-1 flex items-center space-x-2">
+                        ${news.stocks.map(stock => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">${stock}</span>`).join('')}
+                        ${news.infos.map(info => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">${info}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="ml-4 flex-shrink-0 text-sm text-gray-500">
+                    ${news.timestamp}
+                </div>
+            </div>
+        </li>
+    `).join('');
+    
+    // Set relative time for the most recent news
+    const relativeTimeElement = document.getElementById('relative-time');
+    if (relativeTimeElement && recentNews[0].create_timestamp) {
+        relativeTimeElement.dataset.timestamp = recentNews[0].create_timestamp;
+    }
+} else {
+    recentNewsList.innerHTML = '<li class="px-6 py-4 text-sm text-gray-400">No recent news</li>';
+}
 </script>
 {% endblock %}
