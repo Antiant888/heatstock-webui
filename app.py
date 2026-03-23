@@ -102,10 +102,10 @@ async def dashboard(request: Request):
         # Get top 3 info categories for stats card (today only)
         top_3_infos = get_info_frequency_today(session, limit=3)
         
-        # Get recent news (last 5)
+        # Get recent news (last 15)
         recent_news = session.query(HKStockLive)\
             .order_by(desc(HKStockLive.create_timestamp))\
-            .limit(5)\
+            .limit(15)\
             .all()
         
         recent_news_data = []
