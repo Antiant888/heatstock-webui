@@ -107,8 +107,8 @@ async def dashboard(request: Request):
                 'infos': extract_info_names(news.related_infos)
             })
         
-        return templates.TemplateResponse("index.html", {
-            "request": request,
+        context = {
+            "request": {},
             "total_count": total_count,
             "today_count": today_count,
             "daily_counts": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
@@ -117,7 +117,8 @@ async def dashboard(request: Request):
             "info_frequency": json.dumps(info_frequency),
             "top_3_infos": json.dumps(top_3_infos),
             "recent_news_json": json.dumps(recent_news_data)
-        })
+        }
+        return templates.TemplateResponse("index.html", context)
     finally:
         session.close()
 
