@@ -93,8 +93,8 @@ async def dashboard(request: Request):
         # Get top 10 stocks for chart
         stock_frequency = get_stock_frequency(session, limit=10)
         
-        # Get top 3 stocks for stats card
-        top_3_stocks = get_stock_frequency(session, limit=3)
+        # Get top 3 stocks for stats card (today only)
+        top_3_stocks = get_stock_frequency_today(session, limit=3)
         
         # Get top 10 info categories for chart
         info_frequency = get_info_frequency(session, limit=10)
@@ -362,6 +362,44 @@ def get_info_frequency(session, limit=50):
     result = []
     for name, count in info_counter.most_common(limit):
         result.append({
+            'name': name,
+            'frequency': count
+        })
+    return result
+
+def get_stock_frequency_today(session, limit=50):
+    """Get stock code frequency from today's news only"""
+    # Calculate today's start in HKT timezone
+    from datetime import timezone as tz
+    hkt_timezone = tz(timedelta(hours=8))
+    today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Convert HKT midnight to UTC for database comparison
+    today_start_utc = today_start_hkt.astimezone(timezone.utc)
+    today_start_ts = int(today_start_utc.timestamp())
+    
+    # Get today's news with related_stocks
+    news_items = session.query(HKStockLive.related_stocks)\
+        .filter(HKStockLive.related_stocks.isnot(None))\
+        .filter(HKStockLive.create_timestamp >= today_start_ts)\
+        .all()
+    
+    # Count stock codes
+    stock_counter = Counter()
+    for item in news_items:
+        if item[0]:
+            stocks = safe_json_loads(item[0])
+            for stock in stocks:
+                code = stock.get('code', '')
+                name = stock.get('name', '')
+                if code:
+                    stock_counter[f"{code}|{name}"] += 1
+    
+    # Return top N
+    result = []
+    for stock_key, count in stock_counter.most_common(limit):
+        code, name = stock_key.split('|', 1)
+        result.append({
+            'code': code,
             'name': name,
             'frequency': count
         })
