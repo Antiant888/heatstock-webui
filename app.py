@@ -31,15 +31,7 @@ app = FastAPI(title="HK Stock News Dashboard", version="1.0.0")
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Create custom Jinja2 environment with caching disabled
-from jinja2 import Environment, FileSystemLoader
-jinja_env = Environment(
-    loader=FileSystemLoader("templates"),
-    cache_size=0,
-    auto_reload=True
-)
-templates = Jinja2Templates(env=jinja_env)
+templates = Jinja2Templates(directory="templates")
 
 # Database engine
 engine = None
