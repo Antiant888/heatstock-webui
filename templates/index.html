@@ -68,13 +68,49 @@
 </div>
 
 <script>
-// Parse all JSON data from backend
-const dailyCounts = JSON.parse('{{ daily_counts_json|safe }}');
-const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
-const infoFrequency = JSON.parse('{{ info_frequency_json|safe }}');
-const top3Stocks = JSON.parse('{{ top_3_stocks_json|safe }}');
-const top3Infos = JSON.parse('{{ top_3_infos_json|safe }}');
-const recentNews = JSON.parse('{{ recent_news_json|safe }}');
+// Parse all JSON data from backend with error handling
+let dailyCounts = [];
+let stockFrequency = [];
+let infoFrequency = [];
+let top3Stocks = [];
+let top3Infos = [];
+let recentNews = [];
+
+try {
+    dailyCounts = JSON.parse('{{ daily_counts_json|safe }}') || [];
+} catch (e) {
+    console.warn('Failed to parse dailyCounts:', e);
+}
+
+try {
+    stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}') || [];
+} catch (e) {
+    console.warn('Failed to parse stockFrequency:', e);
+}
+
+try {
+    infoFrequency = JSON.parse('{{ info_frequency_json|safe }}') || [];
+} catch (e) {
+    console.warn('Failed to parse infoFrequency:', e);
+}
+
+try {
+    top3Stocks = JSON.parse('{{ top_3_stocks_json|safe }}') || [];
+} catch (e) {
+    console.warn('Failed to parse top3Stocks:', e);
+}
+
+try {
+    top3Infos = JSON.parse('{{ top_3_infos_json|safe }}') || [];
+} catch (e) {
+    console.warn('Failed to parse top3Infos:', e);
+}
+
+try {
+    recentNews = JSON.parse('{{ recent_news_json|safe }}') || [];
+} catch (e) {
+    console.warn('Failed to parse recentNews:', e);
+}
 
 // Populate Top 3 Stocks
 const topStocksList = document.getElementById('top-stocks-list');
