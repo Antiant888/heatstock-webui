@@ -33,7 +33,7 @@
 
 <script>
 // Info frequency data from backend
-const infoFrequency = JSON.parse('{{ info_frequency|safe }}');
+const infoFrequency = JSON.parse('{{ info_frequency_json|safe }}');
 
 // Render chart
 new Chart(document.getElementById('infoChart'), {

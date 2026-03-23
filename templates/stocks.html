@@ -34,7 +34,7 @@
 
 <script>
 // Stock frequency data from backend
-const stockFrequency = JSON.parse('{{ stock_frequency|safe }}');
+const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
 
 // Render chart
 new Chart(document.getElementById('stockChart'), {

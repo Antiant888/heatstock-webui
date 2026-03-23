@@ -4,38 +4,33 @@
 <div class="space-y-6">
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Card 1: Total News Today -->
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-sm font-medium text-gray-500">Total News</div>
-            <div class="mt-1 text-3xl font-semibold text-gray-900">{{ total_count }}</div>
+            <div class="text-sm font-medium text-gray-500">Total News today</div>
+            <div class="mt-1 text-3xl font-semibold text-gray-900">{{ today_count }}</div>
         </div>
+        
+        <!-- Card 2: Top 3 Stocks -->
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-sm font-medium text-gray-500">Top Stock</div>
-            <div class="mt-1 text-xl font-semibold text-gray-900">
-                {% if stock_frequency %}
-                {{ stock_frequency[0].code }} - {{ stock_frequency[0].frequency }} mentions
-                {% else %}
-                N/A
-                {% endif %}
+            <div class="text-sm font-medium text-gray-500">Top Stocks</div>
+            <div class="mt-2 space-y-1" id="top-stocks-list">
+                <!-- Populated by JavaScript -->
             </div>
         </div>
+        
+        <!-- Card 3: Top 3 Categories -->
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-sm font-medium text-gray-500">Top Category</div>
-            <div class="mt-1 text-xl font-semibold text-gray-900">
-                {% if info_frequency %}
-                {{ info_frequency[0].name }} - {{ info_frequency[0].frequency }} mentions
-                {% else %}
-                N/A
-                {% endif %}
+            <div class="text-sm font-medium text-gray-500">Top Categories</div>
+            <div class="mt-2 space-y-1" id="top-infos-list">
+                <!-- Populated by JavaScript -->
             </div>
         </div>
+        
+        <!-- Card 4: Last Updated (Relative Time) -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-sm font-medium text-gray-500">Last Updated</div>
             <div class="mt-1 text-lg font-semibold text-gray-900">
-                {% if recent_news %}
-                {{ recent_news[0].timestamp }}
-                {% else %}
-                N/A
-                {% endif %}
+                <span id="relative-time">N/A</span>
             </div>
         </div>
     </div>
@@ -66,37 +61,111 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <h3 class="text-lg font-medium text-gray-900">Recent News</h3>
         </div>
-        <ul class="divide-y divide-gray-200">
-            {% for news in recent_news %}
-            <li class="px-6 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-900 truncate">{{ news.title }}</p>
-                        <p class="text-sm text-gray-500 truncate">{{ news.content }}</p>
-                        <div class="mt-1 flex items-center space-x-2">
-                            {% for stock in news.stocks %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">{{ stock }}</span>
-                            {% endfor %}
-                            {% for info in news.infos %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">{{ info }}</span>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <div class="ml-4 flex-shrink-0 text-sm text-gray-500">
-                        {{ news.timestamp }}
-                    </div>
-                </div>
-            </li>
-            {% endfor %}
+        <ul class="divide-y divide-gray-200" id="recent-news-list">
+            <!-- Populated by JavaScript -->
         </ul>
     </div>
 </div>
 
 <script>
-// Initialize charts with data from backend
-const dailyCounts = JSON.parse('{{ daily_counts|safe }}');
-const stockFrequency = JSON.parse('{{ stock_frequency|safe }}');
-const infoFrequency = JSON.parse('{{ info_frequency|safe }}');
+// Parse all JSON data from backend
+const dailyCounts = JSON.parse('{{ daily_counts_json|safe }}');
+const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
+const infoFrequency = JSON.parse('{{ info_frequency_json|safe }}');
+const top3Stocks = JSON.parse('{{ top_3_stocks_json|safe }}');
+const top3Infos = JSON.parse('{{ top_3_infos_json|safe }}');
+const recentNews = JSON.parse('{{ recent_news_json|safe }}');
+
+// Populate Top 3 Stocks
+const topStocksList = document.getElementById('top-stocks-list');
+if (top3Stocks && top3Stocks.length > 0) {
+    topStocksList.innerHTML = top3Stocks.map(stock => `
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-900">${stock.code}</span>
+            <span class="text-xs text-gray-500">${stock.frequency}</span>
+        </div>
+    `).join('');
+} else {
+    topStocksList.innerHTML = '<div class="text-sm text-gray-400">N/A</div>';
+}
+
+// Populate Top 3 Categories
+const topInfosList = document.getElementById('top-infos-list');
+if (top3Infos && top3Infos.length > 0) {
+    topInfosList.innerHTML = top3Infos.map(info => `
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-900 truncate">${info.name}</span>
+            <span class="text-xs text-gray-500">${info.frequency}</span>
+        </div>
+    `).join('');
+} else {
+    topInfosList.innerHTML = '<div class="text-sm text-gray-400">N/A</div>';
+}
+
+// Populate Recent News
+const recentNewsList = document.getElementById('recent-news-list');
+if (recentNews && recentNews.length > 0) {
+    recentNewsList.innerHTML = recentNews.map(news => `
+        <li class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">${news.title}</p>
+                    <p class="text-sm text-gray-500 truncate">${news.content}</p>
+                    <div class="mt-1 flex items-center space-x-2">
+                        ${news.stocks.map(stock => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">${stock}</span>`).join('')}
+                        ${news.infos.map(info => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">${info}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="ml-4 flex-shrink-0 text-sm text-gray-500">
+                    ${news.timestamp}
+                </div>
+            </div>
+        </li>
+    `).join('');
+    
+    // Set relative time for the most recent news
+    const relativeTimeElement = document.getElementById('relative-time');
+    if (relativeTimeElement && recentNews[0].create_timestamp) {
+        updateRelativeTime(recentNews[0].create_timestamp);
+    }
+} else {
+    recentNewsList.innerHTML = '<li class="px-6 py-4 text-sm text-gray-400">No recent news</li>';
+}
+
+// Relative time calculation
+function updateRelativeTime(timestamp) {
+    const relativeTimeElement = document.getElementById('relative-time');
+    if (!relativeTimeElement) return;
+    
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    let relativeTime = '';
+    
+    if (days > 0) {
+        relativeTime = days + ' day' + (days > 1 ? 's' : '') + ' ago';
+    } else if (hours > 0) {
+        relativeTime = hours + ' hour' + (hours > 1 ? 's' : '') + ' ago';
+    } else if (minutes > 0) {
+        relativeTime = minutes + ' min' + (minutes > 1 ? 's' : '') + ' ago';
+    } else {
+        relativeTime = 'Just now';
+    }
+    
+    relativeTimeElement.textContent = relativeTime;
+}
+
+// Update relative time every minute
+setInterval(() => {
+    if (recentNews && recentNews.length > 0 && recentNews[0].create_timestamp) {
+        updateRelativeTime(recentNews[0].create_timestamp);
+    }
+}, 60000);
 
 // Daily Chart
 new Chart(document.getElementById('dailyChart'), {
