@@ -76,7 +76,7 @@ async def dashboard(request: Request):
         today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
         # Convert HKT midnight to UTC for database comparison
         today_start_utc = today_start_hkt.astimezone(timezone.utc)
-        today_start_ts = int(today_start_utc.timestamp() * 1000)
+        today_start_ts = int(today_start_utc.timestamp())
         today_count = session.query(HKStockLive)\
             .filter(HKStockLive.create_timestamp >= today_start_ts)\
             .count()
