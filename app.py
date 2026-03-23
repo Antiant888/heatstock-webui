@@ -99,8 +99,8 @@ async def dashboard(request: Request):
         # Get top 10 info categories for chart
         info_frequency = get_info_frequency(session, limit=10)
         
-        # Get top 3 info categories for stats card
-        top_3_infos = get_info_frequency(session, limit=3)
+        # Get top 3 info categories for stats card (today only)
+        top_3_infos = get_info_frequency_today(session, limit=3)
         
         # Get recent news (last 5)
         recent_news = session.query(HKStockLive)\
@@ -400,6 +400,41 @@ def get_stock_frequency_today(session, limit=50):
         code, name = stock_key.split('|', 1)
         result.append({
             'code': code,
+            'name': name,
+            'frequency': count
+        })
+    return result
+
+def get_info_frequency_today(session, limit=50):
+    """Get info category frequency from today's news only"""
+    # Calculate today's start in HKT timezone
+    from datetime import timezone as tz
+    hkt_timezone = tz(timedelta(hours=8))
+    today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Convert HKT midnight to UTC for database comparison
+    today_start_utc = today_start_hkt.astimezone(timezone.utc)
+    today_start_ts = int(today_start_utc.timestamp())
+    
+    # Get today's news with related_infos
+    news_items = session.query(HKStockLive.related_infos)\
+        .filter(HKStockLive.related_infos.isnot(None))\
+        .filter(HKStockLive.create_timestamp >= today_start_ts)\
+        .all()
+    
+    # Count info names
+    info_counter = Counter()
+    for item in news_items:
+        if item[0]:
+            infos = safe_json_loads(item[0])
+            for info in infos:
+                name = info.get('name', '')
+                if name:
+                    info_counter[name] += 1
+    
+    # Return top N
+    result = []
+    for name, count in info_counter.most_common(limit):
+        result.append({
             'name': name,
             'frequency': count
         })
