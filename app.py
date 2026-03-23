@@ -113,9 +113,9 @@ async def dashboard(request: Request):
             "today_count": today_count,
             "daily_counts": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
             "stock_frequency": json.dumps(stock_frequency),
-            "top_3_stocks": top_3_stocks,
+            "top_3_stocks": json.dumps(top_3_stocks),
             "info_frequency": json.dumps(info_frequency),
-            "top_3_infos": top_3_infos,
+            "top_3_infos": json.dumps(top_3_infos),
             "recent_news": recent_news_data
         })
     finally:

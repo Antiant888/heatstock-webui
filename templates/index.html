@@ -13,32 +13,16 @@
         <!-- Card 2: Top 3 Stocks -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-sm font-medium text-gray-500">Top Stocks</div>
-            <div class="mt-2 space-y-1">
-                {% for stock in top_3_stocks %}
-                <div class="flex justify-between items-center">
-                    <span class="text-sm font-medium text-gray-900">{{ stock.code }}</span>
-                    <span class="text-xs text-gray-500">{{ stock.frequency }}</span>
-                </div>
-                {% endfor %}
-                {% if not top_3_stocks %}
-                <div class="text-sm text-gray-400">N/A</div>
-                {% endif %}
+            <div class="mt-2 space-y-1" id="top-stocks-list">
+                <!-- Populated by JavaScript -->
             </div>
         </div>
         
         <!-- Card 3: Top 3 Categories -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-sm font-medium text-gray-500">Top Categories</div>
-            <div class="mt-2 space-y-1">
-                {% for info in top_3_infos %}
-                <div class="flex justify-between items-center">
-                    <span class="text-sm font-medium text-gray-900 truncate">{{ info.name }}</span>
-                    <span class="text-xs text-gray-500">{{ info.frequency }}</span>
-                </div>
-                {% endfor %}
-                {% if not top_3_infos %}
-                <div class="text-sm text-gray-400">N/A</div>
-                {% endif %}
+            <div class="mt-2 space-y-1" id="top-infos-list">
+                <!-- Populated by JavaScript -->
             </div>
         </div>
         
@@ -112,6 +96,34 @@
 const dailyCounts = JSON.parse('{{ daily_counts|safe }}');
 const stockFrequency = JSON.parse('{{ stock_frequency|safe }}');
 const infoFrequency = JSON.parse('{{ info_frequency|safe }}');
+const top3Stocks = JSON.parse('{{ top_3_stocks|safe }}');
+const top3Infos = JSON.parse('{{ top_3_infos|safe }}');
+
+// Populate Top 3 Stocks
+const topStocksList = document.getElementById('top-stocks-list');
+if (top3Stocks && top3Stocks.length > 0) {
+    topStocksList.innerHTML = top3Stocks.map(stock => `
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-900">${stock.code}</span>
+            <span class="text-xs text-gray-500">${stock.frequency}</span>
+        </div>
+    `).join('');
+} else {
+    topStocksList.innerHTML = '<div class="text-sm text-gray-400">N/A</div>';
+}
+
+// Populate Top 3 Categories
+const topInfosList = document.getElementById('top-infos-list');
+if (top3Infos && top3Infos.length > 0) {
+    topInfosList.innerHTML = top3Infos.map(info => `
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-900 truncate">${info.name}</span>
+            <span class="text-xs text-gray-500">${info.frequency}</span>
+        </div>
+    `).join('');
+} else {
+    topInfosList.innerHTML = '<div class="text-sm text-gray-400">N/A</div>';
+}
 
 // Daily Chart
 new Chart(document.getElementById('dailyChart'), {
