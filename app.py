@@ -138,7 +138,10 @@ async def dashboard(request: Request):
 @app.get("/news", response_class=HTMLResponse)
 async def news_page(request: Request):
     """News feed page"""
-    return templates.TemplateResponse("news.html", {"request": request})
+    # Manually render template to bypass TemplateResponse issues
+    template = jinja_env.get_template("news.html")
+    html_content = template.render()
+    return HTMLResponse(content=html_content)
 
 @app.get("/stocks", response_class=HTMLResponse)
 async def stocks_page(request: Request):
@@ -146,10 +149,14 @@ async def stocks_page(request: Request):
     session = get_session(engine)
     try:
         stock_frequency = get_stock_frequency(session, limit=50)
-        return templates.TemplateResponse("stocks.html", {
-            "request": request,
+        context = {
             "stock_frequency_json": json.dumps(stock_frequency)
-        })
+        }
+        
+        # Manually render template to bypass TemplateResponse issues
+        template = jinja_env.get_template("stocks.html")
+        html_content = template.render(**context)
+        return HTMLResponse(content=html_content)
     finally:
         session.close()
 
@@ -159,10 +166,14 @@ async def infos_page(request: Request):
     session = get_session(engine)
     try:
         info_frequency = get_info_frequency(session, limit=50)
-        return templates.TemplateResponse("infos.html", {
-            "request": request,
+        context = {
             "info_frequency_json": json.dumps(info_frequency)
-        })
+        }
+        
+        # Manually render template to bypass TemplateResponse issues
+        template = jinja_env.get_template("infos.html")
+        html_content = template.render(**context)
+        return HTMLResponse(content=html_content)
     finally:
         session.close()
 
