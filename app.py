@@ -108,8 +108,8 @@ async def dashboard(request: Request):
             })
         
         # Convert all data to JSON strings to avoid Jinja2 caching issues
-        return templates.TemplateResponse("index.html", {
-            "request": request,
+        # Create simple context dict without request object to avoid unhashable type errors
+        context = {
             "total_count": total_count,
             "today_count": today_count,
             "daily_counts_json": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
@@ -118,7 +118,8 @@ async def dashboard(request: Request):
             "info_frequency_json": json.dumps(info_frequency),
             "top_3_infos_json": json.dumps(top_3_infos),
             "recent_news_json": json.dumps(recent_news_data)
-        })
+        }
+        return templates.TemplateResponse("index.html", context)
     finally:
         session.close()
 
