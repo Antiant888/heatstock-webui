@@ -127,7 +127,11 @@ async def dashboard(request: Request):
             "top_3_infos_json": json.dumps(top_3_infos),
             "recent_news_json": json.dumps(recent_news_data)
         }
-        return templates.TemplateResponse("index.html", context)
+        
+        # Manually render template to bypass TemplateResponse issues
+        template = jinja_env.get_template("index.html")
+        html_content = template.render(**context)
+        return HTMLResponse(content=html_content)
     finally:
         session.close()
 
