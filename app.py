@@ -31,7 +31,7 @@ app = FastAPI(title="HK Stock News Dashboard", version="1.0.0")
 
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates", auto_reload=True)
 
 # Database engine
 engine = None
