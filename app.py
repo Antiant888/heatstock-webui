@@ -81,14 +81,6 @@ async def dashboard(request: Request):
             .filter(HKStockLive.create_timestamp >= today_start_ts)\
             .count()
         
-        # Get news per day (last 30 days)
-        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1000)
-        daily_counts = session.query(
-            func.date(func.from_unixtime(HKStockLive.create_timestamp / 1000)).label('date'),
-            func.count(HKStockLive.id).label('count')
-        ).filter(
-            HKStockLive.create_timestamp >= thirty_days_ago
-        ).group_by('date').order_by('date').all()
         
         # Get top 10 stocks for chart
         stock_frequency = get_stock_frequency(session, limit=10)
@@ -125,7 +117,6 @@ async def dashboard(request: Request):
         context = {
             "total_count": total_count,
             "today_count": today_count,
-            "daily_counts_json": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
             "stock_frequency_json": json.dumps(stock_frequency),
             "top_3_stocks_json": json.dumps(top_3_stocks),
             "info_frequency_json": json.dumps(info_frequency),
