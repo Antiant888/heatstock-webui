@@ -197,26 +197,6 @@ setInterval(() => {
     }
 }, 60000);
 
-// Daily Chart
-new Chart(document.getElementById('dailyChart'), {
-    type: 'line',
-    data: {
-        labels: dailyCounts.map(d => d.date),
-        datasets: [{
-            label: 'News Count',
-            data: dailyCounts.map(d => d.count),
-            borderColor: 'rgb(34, 197, 94)',
-            tension: 0.1
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true }
-        }
-    }
-});
-
 // Stocks Chart
 new Chart(document.getElementById('stocksChart'), {
     type: 'bar',
