@@ -36,7 +36,13 @@
     </div>
 
     <!-- Charts Row -->
-    <div class="grid grid-cols-1 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Daily News Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">News Per Day (Last 30 Days)</h3>
+            <canvas id="dailyChart" height="200"></canvas>
+        </div>
+        
         <!-- Top Stocks Chart -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Stocks</h3>
@@ -63,6 +69,7 @@
 
 <script>
 // Parse all JSON data from backend
+const dailyCounts = JSON.parse('{{ daily_counts_json|safe }}');
 const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
 const infoFrequency = JSON.parse('{{ info_frequency_json|safe }}');
 const top3Stocks = JSON.parse('{{ top_3_stocks_json|safe }}');
@@ -159,6 +166,26 @@ setInterval(() => {
         updateRelativeTime(recentNews[0].create_timestamp);
     }
 }, 60000);
+
+// Daily Chart
+new Chart(document.getElementById('dailyChart'), {
+    type: 'line',
+    data: {
+        labels: dailyCounts.map(d => d.date),
+        datasets: [{
+            label: 'News Count',
+            data: dailyCounts.map(d => d.count),
+            borderColor: 'rgb(34, 197, 94)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
 
 // Stocks Chart
 new Chart(document.getElementById('stocksChart'), {
