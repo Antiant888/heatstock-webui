@@ -69,9 +69,14 @@ async def dashboard(request: Request):
         # Get total news count
         total_count = session.query(HKStockLive).count()
         
-        # Get today's news count
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        today_start_ts = int(today_start.timestamp() * 1000)
+        # Get today's news count (using HKT timezone for consistency with display)
+        # HKT is UTC+8, so we need to calculate today's start in HKT
+        from datetime import timezone as tz
+        hkt_timezone = tz(timedelta(hours=8))
+        today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+        # Convert HKT midnight to UTC for database comparison
+        today_start_utc = today_start_hkt.astimezone(timezone.utc)
+        today_start_ts = int(today_start_utc.timestamp() * 1000)
         today_count = session.query(HKStockLive)\
             .filter(HKStockLive.create_timestamp >= today_start_ts)\
             .count()
