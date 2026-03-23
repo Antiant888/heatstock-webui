@@ -71,37 +71,37 @@ let top3Infos = [];
 let recentNews = [];
 
 try {
-    dailyCounts = JSON.parse('{{ daily_counts_json|safe }}') || [];
+    dailyCounts = JSON.parse('{{ daily_counts_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse dailyCounts:', e);
 }
 
 try {
-    stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}') || [];
+    stockFrequency = JSON.parse('{{ stock_frequency_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse stockFrequency:', e);
 }
 
 try {
-    infoFrequency = JSON.parse('{{ info_frequency_json|safe }}') || [];
+    infoFrequency = JSON.parse('{{ info_frequency_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse infoFrequency:', e);
 }
 
 try {
-    top3Stocks = JSON.parse('{{ top_3_stocks_json|safe }}') || [];
+    top3Stocks = JSON.parse('{{ top_3_stocks_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse top3Stocks:', e);
 }
 
 try {
-    top3Infos = JSON.parse('{{ top_3_infos_json|safe }}') || [];
+    top3Infos = JSON.parse('{{ top_3_infos_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse top3Infos:', e);
 }
 
 try {
-    recentNews = JSON.parse('{{ recent_news_json|safe }}') || [];
+    recentNews = JSON.parse('{{ recent_news_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse recentNews:', e);
 }
