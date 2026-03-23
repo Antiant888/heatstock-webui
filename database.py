@@ -102,11 +102,11 @@ def get_session(engine):
 # Utility Functions
 # ────────────────────────────────────────────────
 
-def timestamp_to_hkt(timestamp_ms):
-    """Convert Unix timestamp (ms) to HKT datetime string"""
-    if not timestamp_ms:
+def timestamp_to_hkt(timestamp_sec):
+    """Convert Unix timestamp (sec) to HKT datetime string"""
+    if not timestamp_sec:
         return "N/A"
-    utc_time = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
+    utc_time = datetime.fromtimestamp(timestamp_sec, tz=timezone.utc)
     hkt_time = utc_time + timedelta(hours=8)
     return hkt_time.strftime("%Y-%m-%d %H:%M:%S HKT")
 
