@@ -55,6 +55,44 @@ function debounce(func, wait) {
     };
 }
 
+// Relative time calculation for "Last Updated" card
+function updateRelativeTime() {
+    const relativeTimeElement = document.getElementById('relative-time');
+    if (!relativeTimeElement) return;
+    
+    const timestamp = parseInt(relativeTimeElement.dataset.timestamp);
+    if (isNaN(timestamp)) return;
+    
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    let relativeTime = '';
+    
+    if (days > 0) {
+        relativeTime = days + ' day' + (days > 1 ? 's' : '') + ' ago';
+    } else if (hours > 0) {
+        relativeTime = hours + ' hour' + (hours > 1 ? 's' : '') + ' ago';
+    } else if (minutes > 0) {
+        relativeTime = minutes + ' min' + (minutes > 1 ? 's' : '') + ' ago';
+    } else {
+        relativeTime = 'Just now';
+    }
+    
+    relativeTimeElement.textContent = relativeTime;
+}
+
+// Initialize relative time on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateRelativeTime();
+    // Update every minute
+    setInterval(updateRelativeTime, 60000);
+});
+
 // Export functions for use in other scripts
 window.utils = {
     formatNumber,

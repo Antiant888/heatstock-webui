@@ -61,6 +61,13 @@ async def dashboard(request: Request):
         # Get total news count
         total_count = session.query(HKStockLive).count()
         
+        # Get today's news count
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_ts = int(today_start.timestamp() * 1000)
+        today_count = session.query(HKStockLive)\
+            .filter(HKStockLive.create_timestamp >= today_start_ts)\
+            .count()
+        
         # Get news per day (last 30 days)
         thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1000)
         daily_counts = session.query(
@@ -70,11 +77,17 @@ async def dashboard(request: Request):
             HKStockLive.create_timestamp >= thirty_days_ago
         ).group_by('date').order_by('date').all()
         
-        # Get top 10 stocks
+        # Get top 10 stocks for chart
         stock_frequency = get_stock_frequency(session, limit=10)
         
-        # Get top 10 info categories
+        # Get top 3 stocks for stats card
+        top_3_stocks = get_stock_frequency(session, limit=3)
+        
+        # Get top 10 info categories for chart
         info_frequency = get_info_frequency(session, limit=10)
+        
+        # Get top 3 info categories for stats card
+        top_3_infos = get_info_frequency(session, limit=3)
         
         # Get recent news (last 5)
         recent_news = session.query(HKStockLive)\
@@ -89,6 +102,7 @@ async def dashboard(request: Request):
                 'title': news.title or 'Untitled',
                 'content': (news.content[:100] + '...') if news.content and len(news.content) > 100 else (news.content or ''),
                 'timestamp': timestamp_to_hkt(news.create_timestamp),
+                'create_timestamp': news.create_timestamp,
                 'stocks': extract_stock_codes(news.related_stocks),
                 'infos': extract_info_names(news.related_infos)
             })
@@ -96,9 +110,12 @@ async def dashboard(request: Request):
         return templates.TemplateResponse("index.html", {
             "request": request,
             "total_count": total_count,
+            "today_count": today_count,
             "daily_counts": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
             "stock_frequency": json.dumps(stock_frequency),
+            "top_3_stocks": top_3_stocks,
             "info_frequency": json.dumps(info_frequency),
+            "top_3_infos": top_3_infos,
             "recent_news": recent_news_data
         })
     finally:

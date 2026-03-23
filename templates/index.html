@@ -4,35 +4,50 @@
 <div class="space-y-6">
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Card 1: Total News Today -->
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-sm font-medium text-gray-500">Total News</div>
-            <div class="mt-1 text-3xl font-semibold text-gray-900">{{ total_count }}</div>
+            <div class="text-sm font-medium text-gray-500">Total News today</div>
+            <div class="mt-1 text-3xl font-semibold text-gray-900">{{ today_count }}</div>
         </div>
+        
+        <!-- Card 2: Top 3 Stocks -->
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-sm font-medium text-gray-500">Top Stock</div>
-            <div class="mt-1 text-xl font-semibold text-gray-900">
-                {% if stock_frequency %}
-                {{ stock_frequency[0].code }} - {{ stock_frequency[0].frequency }} mentions
-                {% else %}
-                N/A
+            <div class="text-sm font-medium text-gray-500">Top Stocks</div>
+            <div class="mt-2 space-y-1">
+                {% for stock in top_3_stocks %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-900">{{ stock.code }}</span>
+                    <span class="text-xs text-gray-500">{{ stock.frequency }}</span>
+                </div>
+                {% endfor %}
+                {% if not top_3_stocks %}
+                <div class="text-sm text-gray-400">N/A</div>
                 {% endif %}
             </div>
         </div>
+        
+        <!-- Card 3: Top 3 Categories -->
         <div class="bg-white rounded-lg shadow p-6">
-            <div class="text-sm font-medium text-gray-500">Top Category</div>
-            <div class="mt-1 text-xl font-semibold text-gray-900">
-                {% if info_frequency %}
-                {{ info_frequency[0].name }} - {{ info_frequency[0].frequency }} mentions
-                {% else %}
-                N/A
+            <div class="text-sm font-medium text-gray-500">Top Categories</div>
+            <div class="mt-2 space-y-1">
+                {% for info in top_3_infos %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-900 truncate">{{ info.name }}</span>
+                    <span class="text-xs text-gray-500">{{ info.frequency }}</span>
+                </div>
+                {% endfor %}
+                {% if not top_3_infos %}
+                <div class="text-sm text-gray-400">N/A</div>
                 {% endif %}
             </div>
         </div>
+        
+        <!-- Card 4: Last Updated (Relative Time) -->
         <div class="bg-white rounded-lg shadow p-6">
             <div class="text-sm font-medium text-gray-500">Last Updated</div>
             <div class="mt-1 text-lg font-semibold text-gray-900">
                 {% if recent_news %}
-                {{ recent_news[0].timestamp }}
+                <span id="relative-time" data-timestamp="{{ recent_news[0].create_timestamp }}"></span>
                 {% else %}
                 N/A
                 {% endif %}
