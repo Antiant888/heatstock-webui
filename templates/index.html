@@ -118,9 +118,11 @@ try {
 }
 
 try {
-    availableMarkets = JSON.parse('{{ available_markets_json }}') || [];
+    const marketsJson = '{{ available_markets_json }}';
+    availableMarkets = marketsJson ? JSON.parse(marketsJson) : [];
 } catch (e) {
     console.warn('Failed to parse availableMarkets:', e);
+    availableMarkets = [];
 }
 
 try {
