@@ -112,9 +112,12 @@ try {
 }
 
 try {
-    recentNews = JSON.parse('{{ recent_news_json }}') || [];
+    // Safely parse recentNews JSON - handle control characters
+    const recentNewsJson = '{{ recent_news_json|safe }}';
+    recentNews = recentNewsJson ? JSON.parse(recentNewsJson) : [];
 } catch (e) {
     console.warn('Failed to parse recentNews:', e);
+    recentNews = [];
 }
 
 try {
@@ -341,6 +344,12 @@ function updateStocksChart() {
 function initializeStocksChart() {
     const ctx = document.getElementById('stocksChart');
     if (!ctx) return;
+    
+    // Check if chart already exists and destroy it
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) {
+        existingChart.destroy();
+    }
     
     stocksChart = new Chart(ctx, {
         type: 'bar',
