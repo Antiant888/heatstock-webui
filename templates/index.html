@@ -279,11 +279,14 @@ function initializeMarketCheckboxes() {
         return;
     }
     
+    // Default markets to select (HK and US)
+    const defaultMarkets = ['HK', 'US'];
+    
     // Create checkboxes for each available market
     marketCheckboxesContainer.innerHTML = availableMarkets.map(market => `
         <label class="inline-flex items-center">
             <input type="checkbox" class="market-checkbox form-checkbox h-4 w-4 text-blue-600" 
-                   value="${market}" checked>
+                   value="${market}" ${defaultMarkets.includes(market) ? 'checked' : ''}>
             <span class="ml-2 text-sm text-gray-700">${market}</span>
         </label>
     `).join('');
@@ -301,8 +304,8 @@ function initializeMarketCheckboxes() {
         });
     });
     
-    // Initialize with all markets selected
-    selectedMarkets = new Set(availableMarkets);
+    // Initialize with only default markets selected
+    selectedMarkets = new Set(defaultMarkets.filter(market => availableMarkets.includes(market)));
 }
 
 // Update stocks chart based on selected markets
