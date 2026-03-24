@@ -309,36 +309,35 @@ function initializeMarketCheckboxes() {
 function updateStocksChart() {
     if (!stocksChart) return;
     
-    // Combine data from selected markets - avoid double counting
-    let combinedData = {};
+    // Use market-specific data directly from backend
+    let combinedData = [];
     
-    selectedMarkets.forEach(market => {
-        if (marketStockData[market]) {
-            marketStockData[market].forEach(stock => {
-                const key = `${stock.code}-${stock.market}`; // Use code-market as unique key
-                if (!combinedData[key]) {
-                    combinedData[key] = {
+    if (selectedMarkets.size === availableMarkets.length) {
+        // All markets selected - use the default stock frequency data
+        combinedData = stockFrequency;
+    } else {
+        // Specific markets selected - combine data from selected markets
+        selectedMarkets.forEach(market => {
+            if (marketStockData[market]) {
+                marketStockData[market].forEach(stock => {
+                    combinedData.push({
                         code: stock.code,
                         name: stock.name,
                         market: stock.market,
                         frequency: stock.frequency
-                    };
-                } else {
-                    // If same stock appears in multiple markets, take the higher frequency
-                    combinedData[key].frequency = Math.max(combinedData[key].frequency, stock.frequency);
-                }
-            });
-        }
-    });
-    
-    // Convert to array and sort by frequency
-    const sortedData = Object.values(combinedData)
-        .sort((a, b) => b.frequency - a.frequency)
-        .slice(0, 10); // Top 10
+                    });
+                });
+            }
+        });
+        
+        // Sort by frequency and take top 10
+        combinedData.sort((a, b) => b.frequency - a.frequency);
+        combinedData = combinedData.slice(0, 10);
+    }
     
     // Update chart
-    stocksChart.data.labels = sortedData.map(s => s.code);
-    stocksChart.data.datasets[0].data = sortedData.map(s => s.frequency);
+    stocksChart.data.labels = combinedData.map(s => s.code);
+    stocksChart.data.datasets[0].data = combinedData.map(s => s.frequency);
     stocksChart.update();
 }
 

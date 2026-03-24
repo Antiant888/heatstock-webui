@@ -100,10 +100,10 @@ async def dashboard(request: Request):
         # Get available markets for filtering
         available_markets = get_available_markets(session)
         
-        # Get stock frequency by market for each available market
+        # Get stock frequency by market for each available market (today only)
         market_stock_data = {}
         for market in available_markets:
-            market_stock_data[market] = get_stock_frequency_by_market(session, market, limit=10)
+            market_stock_data[market] = get_stock_frequency_today_by_market(session, market, limit=10)
         
         # Get top 10 info categories for chart
         info_frequency = get_info_frequency(session, limit=10)
@@ -540,6 +540,46 @@ def get_stock_frequency_by_market(session, market, limit=50):
         .all()
     
     # Count stock codes for specific market
+    stock_counter = Counter()
+    for item in news_items:
+        if item[0]:
+            stocks = safe_json_loads(item[0])
+            for stock in stocks:
+                code = stock.get('code', '')
+                name = stock.get('name', '')
+                stock_market = stock.get('market', '')
+                if code and stock_market == market:
+                    stock_counter[f"{code}|{name}|{stock_market}"] += 1
+    
+    # Return top N
+    result = []
+    for stock_key, count in stock_counter.most_common(limit):
+        code, name, stock_market = stock_key.split('|', 2)
+        result.append({
+            'code': code,
+            'name': name,
+            'market': stock_market,
+            'frequency': count
+        })
+    return result
+
+def get_stock_frequency_today_by_market(session, market, limit=50):
+    """Get stock code frequency from today's news filtered by specific market"""
+    # Calculate today's start in HKT timezone
+    from datetime import timezone as tz
+    hkt_timezone = tz(timedelta(hours=8))
+    today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+    # Convert HKT midnight to UTC for database comparison
+    today_start_utc = today_start_hkt.astimezone(timezone.utc)
+    today_start_ts = int(today_start_utc.timestamp())
+    
+    # Get today's news with related_stocks filtered by market
+    news_items = session.query(HKStockLive.related_stocks)\
+        .filter(HKStockLive.related_stocks.isnot(None))\
+        .filter(HKStockLive.create_timestamp >= today_start_ts)\
+        .all()
+    
+    # Count stock codes for specific market from today's news
     stock_counter = Counter()
     for item in news_items:
         if item[0]:
