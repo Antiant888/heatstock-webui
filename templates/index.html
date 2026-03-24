@@ -222,22 +222,31 @@ setInterval(() => {
     }
 }, 60000);
 
-// Stocks Chart
-new Chart(document.getElementById('stocksChart'), {
-    type: 'bar',
-    data: {
-        labels: stockFrequency.map(s => s.code),
-        datasets: [{
-            label: 'Mentions',
-            data: stockFrequency.map(s => s.frequency),
-            backgroundColor: 'rgba(59, 130, 246, 0.5)'
-        }]
-    },
-    options: {
-        responsive: true,
-        indexAxis: 'y'
+// Stocks Chart - with error handling for canvas reuse
+const stocksCanvas = document.getElementById('stocksChart');
+if (stocksCanvas) {
+    // Check if chart already exists on this canvas
+    const existingChart = Chart.getChart(stocksCanvas);
+    if (existingChart) {
+        existingChart.destroy();
     }
-});
+    
+    new Chart(stocksCanvas, {
+        type: 'bar',
+        data: {
+            labels: stockFrequency.map(s => s.code),
+            datasets: [{
+                label: 'Mentions',
+                data: stockFrequency.map(s => s.frequency),
+                backgroundColor: 'rgba(59, 130, 246, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y'
+        }
+    });
+}
 
 // Infos Chart
 new Chart(document.getElementById('infosChart'), {
