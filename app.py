@@ -131,23 +131,22 @@ async def dashboard(request: Request):
         
         # Convert all data to JSON strings to avoid Jinja2 caching issues
         # Create simple context dict without request object to avoid unhashable type errors
+        # Use only simple types (strings, numbers) to prevent caching issues
         context = {
-            "total_count": total_count,
-            "today_count": today_count,
-            "daily_counts_json": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
-            "stock_frequency_json": json.dumps(stock_frequency),
-            "top_3_stocks_json": json.dumps(top_3_stocks),
-            "available_markets_json": json.dumps(available_markets),
-            "market_stock_data_json": json.dumps(market_stock_data),
-            "info_frequency_json": json.dumps(info_frequency),
-            "top_3_infos_json": json.dumps(top_3_infos),
-            "recent_news_json": json.dumps(recent_news_data)
+            "total_count": int(total_count),
+            "today_count": int(today_count),
+            "daily_counts_json": str(json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts])),
+            "stock_frequency_json": str(json.dumps(stock_frequency)),
+            "top_3_stocks_json": str(json.dumps(top_3_stocks)),
+            "available_markets_json": str(json.dumps(available_markets)),
+            "market_stock_data_json": str(json.dumps(market_stock_data)),
+            "info_frequency_json": str(json.dumps(info_frequency)),
+            "top_3_infos_json": str(json.dumps(top_3_infos)),
+            "recent_news_json": str(json.dumps(recent_news_data))
         }
         
-        # Manually render template to bypass TemplateResponse issues
-        template = jinja_env.get_template("index.html")
-        html_content = template.render(**context)
-        return HTMLResponse(content=html_content)
+        # Use TemplateResponse instead of manual rendering to avoid caching issues
+        return templates.TemplateResponse("index.html", context)
     finally:
         session.close()
 
