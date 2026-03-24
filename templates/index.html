@@ -40,6 +40,15 @@
         <!-- Top Stocks Chart -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Stocks</h3>
+            
+            <!-- Market Filter Checkboxes -->
+            <div class="mb-4" id="market-filters">
+                <div class="text-sm font-medium text-gray-700 mb-2">Filter by Market:</div>
+                <div class="flex flex-wrap gap-2" id="market-checkboxes">
+                    <!-- Checkboxes will be populated by JavaScript -->
+                </div>
+            </div>
+            
             <canvas id="stocksChart" height="200"></canvas>
         </div>
         
@@ -69,6 +78,8 @@ let infoFrequency = [];
 let top3Stocks = [];
 let top3Infos = [];
 let recentNews = [];
+let availableMarkets = [];
+let marketStockData = {};
 
 try {
     dailyCounts = JSON.parse('{{ daily_counts_json }}') || [];
@@ -104,6 +115,18 @@ try {
     recentNews = JSON.parse('{{ recent_news_json }}') || [];
 } catch (e) {
     console.warn('Failed to parse recentNews:', e);
+}
+
+try {
+    availableMarkets = JSON.parse('{{ available_markets_json }}') || [];
+} catch (e) {
+    console.warn('Failed to parse availableMarkets:', e);
+}
+
+try {
+    marketStockData = JSON.parse('{{ market_stock_data_json }}') || {};
+} catch (e) {
+    console.warn('Failed to parse marketStockData:', e);
 }
 
 // Populate Top 3 Stocks
@@ -229,6 +252,106 @@ new Chart(document.getElementById('infosChart'), {
         responsive: true,
         indexAxis: 'y'
     }
+});
+
+// Market Filter Functionality
+let selectedMarkets = new Set();
+let stocksChart = null;
+
+// Initialize market checkboxes
+function initializeMarketCheckboxes() {
+    const marketCheckboxesContainer = document.getElementById('market-checkboxes');
+    if (!marketCheckboxesContainer || !availableMarkets || availableMarkets.length === 0) {
+        return;
+    }
+    
+    // Create checkboxes for each available market
+    marketCheckboxesContainer.innerHTML = availableMarkets.map(market => `
+        <label class="inline-flex items-center">
+            <input type="checkbox" class="market-checkbox form-checkbox h-4 w-4 text-blue-600" 
+                   value="${market}" checked>
+            <span class="ml-2 text-sm text-gray-700">${market}</span>
+        </label>
+    `).join('');
+    
+    // Add event listeners to checkboxes
+    const checkboxes = document.querySelectorAll('.market-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                selectedMarkets.add(this.value);
+            } else {
+                selectedMarkets.delete(this.value);
+            }
+            updateStocksChart();
+        });
+    });
+    
+    // Initialize with all markets selected
+    selectedMarkets = new Set(availableMarkets);
+}
+
+// Update stocks chart based on selected markets
+function updateStocksChart() {
+    if (!stocksChart) return;
+    
+    // Combine data from selected markets
+    let combinedData = {};
+    
+    selectedMarkets.forEach(market => {
+        if (marketStockData[market]) {
+            marketStockData[market].forEach(stock => {
+                const key = stock.code;
+                if (!combinedData[key]) {
+                    combinedData[key] = {
+                        code: stock.code,
+                        name: stock.name,
+                        market: stock.market,
+                        frequency: 0
+                    };
+                }
+                combinedData[key].frequency += stock.frequency;
+            });
+        }
+    });
+    
+    // Convert to array and sort by frequency
+    const sortedData = Object.values(combinedData)
+        .sort((a, b) => b.frequency - a.frequency)
+        .slice(0, 10); // Top 10
+    
+    // Update chart
+    stocksChart.data.labels = sortedData.map(s => s.code);
+    stocksChart.data.datasets[0].data = sortedData.map(s => s.frequency);
+    stocksChart.update();
+}
+
+// Initialize the stocks chart
+function initializeStocksChart() {
+    const ctx = document.getElementById('stocksChart');
+    if (!ctx) return;
+    
+    stocksChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stockFrequency.map(s => s.code),
+            datasets: [{
+                label: 'Mentions',
+                data: stockFrequency.map(s => s.frequency),
+                backgroundColor: 'rgba(59, 130, 246, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y'
+        }
+    });
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStocksChart();
+    initializeMarketCheckboxes();
 });
 </script>
 {% endblock %}

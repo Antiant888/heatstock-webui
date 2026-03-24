@@ -97,6 +97,14 @@ async def dashboard(request: Request):
         # Get top 3 stocks for stats card (today only)
         top_3_stocks = get_stock_frequency_today(session, limit=3)
         
+        # Get available markets for filtering
+        available_markets = get_available_markets(session)
+        
+        # Get stock frequency by market for each available market
+        market_stock_data = {}
+        for market in available_markets:
+            market_stock_data[market] = get_stock_frequency_by_market(session, market, limit=10)
+        
         # Get top 10 info categories for chart
         info_frequency = get_info_frequency(session, limit=10)
         
@@ -129,6 +137,8 @@ async def dashboard(request: Request):
             "daily_counts_json": json.dumps([{'date': str(d[0]), 'count': d[1]} for d in daily_counts]),
             "stock_frequency_json": json.dumps(stock_frequency),
             "top_3_stocks_json": json.dumps(top_3_stocks),
+            "available_markets_json": json.dumps(available_markets),
+            "market_stock_data_json": json.dumps(market_stock_data),
             "info_frequency_json": json.dumps(info_frequency),
             "top_3_infos_json": json.dumps(top_3_infos),
             "recent_news_json": json.dumps(recent_news_data)
@@ -468,6 +478,56 @@ def get_info_frequency_today(session, limit=50):
             'frequency': count
         })
     return result
+
+def get_stock_frequency_by_market(session, market, limit=50):
+    """Get stock code frequency filtered by specific market"""
+    # Get all news with related_stocks
+    news_items = session.query(HKStockLive.related_stocks)\
+        .filter(HKStockLive.related_stocks.isnot(None))\
+        .all()
+    
+    # Count stock codes for specific market
+    stock_counter = Counter()
+    for item in news_items:
+        if item[0]:
+            stocks = safe_json_loads(item[0])
+            for stock in stocks:
+                code = stock.get('code', '')
+                name = stock.get('name', '')
+                stock_market = stock.get('market', '')
+                if code and stock_market == market:
+                    stock_counter[f"{code}|{name}|{stock_market}"] += 1
+    
+    # Return top N
+    result = []
+    for stock_key, count in stock_counter.most_common(limit):
+        code, name, stock_market = stock_key.split('|', 2)
+        result.append({
+            'code': code,
+            'name': name,
+            'market': stock_market,
+            'frequency': count
+        })
+    return result
+
+def get_available_markets(session):
+    """Get list of available markets from the data"""
+    # Get all news with related_stocks
+    news_items = session.query(HKStockLive.related_stocks)\
+        .filter(HKStockLive.related_stocks.isnot(None))\
+        .all()
+    
+    # Extract unique markets
+    markets = set()
+    for item in news_items:
+        if item[0]:
+            stocks = safe_json_loads(item[0])
+            for stock in stocks:
+                market = stock.get('market', '')
+                if market:
+                    markets.add(market)
+    
+    return sorted(list(markets))
 
 if __name__ == "__main__":
     import uvicorn

@@ -133,3 +133,14 @@ def extract_stock_names(related_stocks_json):
     """Extract stock names from related_stocks JSON (TEST FUNCTION)"""
     stocks = safe_json_loads(related_stocks_json)
     return [stock.get("name", "") for stock in stocks if stock.get("name")]
+
+def extract_stock_markets(related_stocks_json):
+    """Extract stock markets from related_stocks JSON"""
+    stocks = safe_json_loads(related_stocks_json)
+    return [stock.get("market", "") for stock in stocks if stock.get("market")]
+
+def extract_stock_data_with_market(related_stocks_json):
+    """Extract stock data with market information from related_stocks JSON"""
+    stocks = safe_json_loads(related_stocks_json)
+    return [{"code": stock.get("code", ""), "name": stock.get("name", ""), "market": stock.get("market", "")} 
+            for stock in stocks if stock.get("code")]
