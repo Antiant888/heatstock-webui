@@ -64,7 +64,7 @@ function updateRelativeTime() {
     if (isNaN(timestamp)) return;
     
     const now = Date.now();
-    const diff = now - timestamp;
+    const diff = now - (timestamp * 1000);
     
     const seconds = Math.floor(diff / 1000);
     const minutes = Math.floor(seconds / 60);
