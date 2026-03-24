@@ -91,8 +91,8 @@ async def dashboard(request: Request):
             HKStockLive.create_timestamp >= thirty_days_ago
         ).group_by('date').order_by('date').all()
         
-        # Get top 10 stocks for chart
-        stock_frequency = get_stock_frequency(session, limit=10)
+        # Get top 10 stocks for chart (today only)
+        stock_frequency = get_stock_frequency_today(session, limit=10)
         
         # Get top 3 stocks for stats card (today only)
         top_3_stocks = get_stock_frequency_today(session, limit=3)
