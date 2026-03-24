@@ -347,6 +347,36 @@ async def api_test_stock_names():
     finally:
         session.close()
 
+@app.get("/api/test/available-markets")
+async def api_test_available_markets():
+    """TEST: Check if get_available_markets function is working"""
+    session = get_session(engine)
+    try:
+        # Test the get_available_markets function
+        available_markets = get_available_markets(session)
+        
+        # Also get a sample of related_stocks to see the data structure
+        sample_news = session.query(HKStockLive.related_stocks)\
+            .filter(HKStockLive.related_stocks.isnot(None))\
+            .limit(3)\
+            .all()
+        
+        sample_data = []
+        for item in sample_news:
+            if item[0]:
+                stocks = safe_json_loads(item[0])
+                sample_data.append({
+                    "raw": item[0],
+                    "parsed": stocks
+                })
+        
+        return {
+            "available_markets": available_markets,
+            "sample_data": sample_data
+        }
+    finally:
+        session.close()
+
 # ────────────────────────────────────────────────
 # Helper Functions
 # ────────────────────────────────────────────────
