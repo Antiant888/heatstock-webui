@@ -145,8 +145,10 @@ async def dashboard(request: Request):
             "recent_news_json": str(json.dumps(recent_news_data))
         }
         
-        # Use TemplateResponse instead of manual rendering to avoid caching issues
-        return templates.TemplateResponse("index.html", context)
+        # Manually render template to bypass TemplateResponse issues
+        template = jinja_env.get_template("index.html")
+        html_content = template.render(**context)
+        return HTMLResponse(content=html_content)
     finally:
         session.close()
 
