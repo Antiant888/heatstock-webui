@@ -23,7 +23,8 @@ from database import (
     timestamp_to_hkt,
     safe_json_loads,
     extract_stock_codes,
-    extract_info_names
+    extract_info_names,
+    extract_stock_names
 )
 
 # Initialize FastAPI app
@@ -304,6 +305,34 @@ async def api_stats_overview():
             'daily_counts': [{'date': str(d[0]), 'count': d[1]} for d in daily_counts],
             'top_stocks': get_stock_frequency(session, limit=10),
             'top_infos': get_info_frequency(session, limit=10)
+        }
+    finally:
+        session.close()
+
+@app.get("/api/test/stock-names")
+async def api_test_stock_names():
+    """TEST: Extract stock names from related_stocks to see actual data"""
+    session = get_session(engine)
+    try:
+        # Get the most recent news item with related_stocks
+        news = session.query(HKStockLive)\
+            .filter(HKStockLive.related_stocks.isnot(None))\
+            .order_by(desc(HKStockLive.create_timestamp))\
+            .first()
+        
+        if not news:
+            return {"error": "No news with related_stocks found"}
+        
+        # Extract stock names using test function
+        stock_names = extract_stock_names(news.related_stocks)
+        stock_codes = extract_stock_codes(news.related_stocks)
+        
+        return {
+            "news_id": news.id,
+            "news_title": news.title,
+            "related_stocks_raw": news.related_stocks,
+            "stock_codes_extracted": stock_codes,
+            "stock_names_extracted": stock_names
         }
     finally:
         session.close()

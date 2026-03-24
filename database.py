@@ -128,3 +128,8 @@ def extract_info_names(related_infos_json):
     """Extract info names from related_infos JSON"""
     infos = safe_json_loads(related_infos_json)
     return [info.get("name", "") for info in infos if info.get("name")]
+
+def extract_stock_names(related_stocks_json):
+    """Extract stock names from related_stocks JSON (TEST FUNCTION)"""
+    stocks = safe_json_loads(related_stocks_json)
+    return [stock.get("name", "") for stock in stocks if stock.get("name")]
