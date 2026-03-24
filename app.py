@@ -377,6 +377,28 @@ async def api_test_available_markets():
     finally:
         session.close()
 
+@app.get("/api/test/dashboard-context")
+async def api_test_dashboard_context():
+    """TEST: Check what context is being passed to dashboard template"""
+    session = get_session(engine)
+    try:
+        # Get available markets
+        available_markets = get_available_markets(session)
+        
+        # Get stock frequency by market
+        market_stock_data = {}
+        for market in available_markets:
+            market_stock_data[market] = get_stock_frequency_by_market(session, market, limit=10)
+        
+        return {
+            "available_markets": available_markets,
+            "available_markets_json": json.dumps(available_markets),
+            "market_stock_data": market_stock_data,
+            "market_stock_data_json": json.dumps(market_stock_data)
+        }
+    finally:
+        session.close()
+
 # ────────────────────────────────────────────────
 # Helper Functions
 # ────────────────────────────────────────────────
