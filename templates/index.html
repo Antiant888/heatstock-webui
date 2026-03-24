@@ -113,7 +113,9 @@ try {
 
 try {
     // Safely parse recentNews JSON - handle control characters
-    const recentNewsJson = '{{ recent_news_json|safe }}';
+    let recentNewsJson = '{{ recent_news_json|safe }}';
+    // Escape control characters that might break JSON parsing
+    recentNewsJson = recentNewsJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     recentNews = recentNewsJson ? JSON.parse(recentNewsJson) : [];
 } catch (e) {
     console.warn('Failed to parse recentNews:', e);
