@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Stock News Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div class="flex items-center py-4">
+                        <span class="font-semibold text-gray-700 text-lg">HK Stock News Dashboard</span>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-1">
+                        <a href="/" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 ">Dashboard</a>
+                        <a href="/news" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 ">News Feed</a>
+                        <a href="/stocks" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 ">Stock Frequency</a>
+                        <a href="/infos" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 ">Info Frequency</a>
+                    </div>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button class="outline-none mobile-menu-button">
+                        <svg class="w-6 h-6 text-gray-500 hover:text-green-500" x-show="!showMenu" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div class="hidden mobile-menu">
+            <ul class="">
+                <li><a href="/" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Dashboard</a></li>
+                <li><a href="/news" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">News Feed</a></li>
+                <li><a href="/stocks" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Stock Frequency</a></li>
+                <li><a href="/infos" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Info Frequency</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 px-4">
+        
+<div class="space-y-6">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Card 1: Total News Today -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Total News today</div>
+            <div class="mt-1 text-3xl font-semibold text-gray-900">552</div>
+        </div>
+        
+        <!-- Card 2: Top 3 Stocks -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Top Stocks</div>
+            <div class="mt-2 space-y-1" id="top-stocks-list">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Card 3: Top 3 Categories -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Top Categories</div>
+            <div class="mt-2 space-y-1" id="top-infos-list">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Card 4: Last Updated (Relative Time) -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-sm font-medium text-gray-500">Last Updated</div>
+            <div class="mt-1 text-lg font-semibold text-gray-900">
+                <span id="relative-time">N/A</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Top Stocks Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Stocks</h3>
+            
+            <!-- Market Filter Checkboxes -->
+            <div class="mb-4" id="market-filters">
+                <div class="text-sm font-medium text-gray-700 mb-2">Filter by Market:</div>
+                <div class="flex flex-wrap gap-2" id="market-checkboxes">
+                    <!-- Checkboxes will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <canvas id="stocksChart" height="200"></canvas>
+        </div>
+        
+        <!-- Top Categories Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Top 10 Info Categories</h3>
+            <canvas id="infosChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent News -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Recent News</h3>
+        </div>
+        <ul class="divide-y divide-gray-200" id="recent-news-list">
+            <!-- Populated by JavaScript -->
+        </ul>
+    </div>
+</div>
+
+<script>
+// Parse all JSON data from backend with error handling
+let dailyCounts = [];
+let stockFrequency = [];
+let infoFrequency = [];
+let top3Stocks = [];
+let top3Infos = [];
+let recentNews = [];
+let availableMarkets = [];
+let marketStockData = {};
+
+try {
+    dailyCounts = JSON.parse('[]') || [];
+} catch (e) {
+    console.warn('Failed to parse dailyCounts:', e);
+}
+
+try {
+    stockFrequency = JSON.parse('[{"code": "00291", "name": "\u534e\u6da6\u5564\u9152", "frequency": 6}, {"code": "07709", "name": "XL\u4e8c\u5357\u65b9\u6d77\u529b\u58eb", "frequency": 5}, {"code": "06181", "name": "\u8001\u94fa\u9ec4\u91d1", "frequency": 5}, {"code": "399006", "name": "\u521b\u4e1a\u677f\u6307", "frequency": 4}, {"code": "BABA", "name": "\u963f\u91cc\u5df4\u5df4", "frequency": 4}, {"code": "09988", "name": "\u963f\u91cc\u5df4\u5df4-W", "frequency": 4}, {"code": "HSTECH", "name": "\u6052\u751f\u79d1\u6280\u6307\u6570", "frequency": 3}, {"code": "02097", "name": "\u871c\u96ea\u96c6\u56e2", "frequency": 3}, {"code": "02729", "name": "\u51ef\u4e50\u58eb\u79d1\u6280", "frequency": 2}, {"code": "TM", "name": "\u4e30\u7530\u6c7d\u8f66", "frequency": 2}]') || [];
+} catch (e) {
+    console.warn('Failed to parse stockFrequency:', e);
+}
+
+try {
+    infoFrequency = JSON.parse('[{"name": "\u76f4\u64ad\u4e28\u7f8e\u4f0a\u51b2\u7a81", "frequency": 368}, {"name": "\u9ec4\u91d1", "frequency": 35}, {"name": "\u4eba\u5de5\u667a\u80fd/AI", "frequency": 32}, {"name": "\u7efc\u5408\u6027\u77f3\u6cb9\u5929\u7136\u6c14", "frequency": 25}, {"name": "\u79d1\u6280\u80a1", "frequency": 22}, {"name": "\u534a\u5bfc\u4f53", "frequency": 18}, {"name": "\u673a\u5668\u4eba", "frequency": 17}, {"name": "\u767d\u94f6", "frequency": 14}, {"name": "\u751f\u7269\u79d1\u6280", "frequency": 13}, {"name": "\u65b0\u80fd\u6e90\u6c7d\u8f66", "frequency": 12}]') || [];
+} catch (e) {
+    console.warn('Failed to parse infoFrequency:', e);
+}
+
+try {
+    top3Stocks = JSON.parse('[{"code": "00291", "name": "\u534e\u6da6\u5564\u9152", "frequency": 6}, {"code": "07709", "name": "XL\u4e8c\u5357\u65b9\u6d77\u529b\u58eb", "frequency": 5}, {"code": "06181", "name": "\u8001\u94fa\u9ec4\u91d1", "frequency": 5}]') || [];
+} catch (e) {
+    console.warn('Failed to parse top3Stocks:', e);
+}
+
+try {
+    top3Infos = JSON.parse('[{"name": "\u76f4\u64ad\u4e28\u7f8e\u4f0a\u51b2\u7a81", "frequency": 33}, {"name": "\u751f\u7269\u79d1\u6280", "frequency": 6}, {"name": "\u9ec4\u91d1", "frequency": 5}]') || [];
+} catch (e) {
+    console.warn('Failed to parse top3Infos:', e);
+}
+
+try {
+    // Safely parse recentNews JSON - handle control characters
+    let recentNewsJson = '[{"id": "2363813", "title": "Pepperstone\uff1a\u662f\u5426\u8fdb\u884c\u5bf9\u8bdd\u4e0d\u91cd\u8981\uff0c\u91cd\u70b9\u662f\u7279\u6717\u666e\u8bd5\u56fe\u7f13\u548c\u5c40\u52bf", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5cPepperstone\u7b56\u7565\u5e08\u8fc8\u514b\u5c14\u00b7\u5e03\u6717\u8868\u793a\uff0c\u7279\u6717\u666e\u79f0\u4e0e\u4f0a\u6717\u7684\u8c08\u5224\u201c\u8fdb\u5c55\u826f\u597d\u4e14\u5bcc\u6709\u6210\u6548\u201d\uff0c\u8fd9\u8868\u660e\u4ed6\u8bd5\u56fe\u7f13\u548c\u5c40\u52bf\u3002\u201c\u867d\u7136\u4f0a\u6717\u5426\u8ba4\u4e86\u8fd9\u4e00\u70b9\uff0c\u4f46\u662f\u5426\u771f\u7684\u8fdb\u884c\u4e86\u5bf9\u8bdd\u5e76\u4e0d\u592a\u91cd\u8981\u3002\u8fd9\u4e00\u4e3e\u52a8\u8868\u660e\u7279...", "timestamp": "2026-03-24 15:21:54 HKT", "create_timestamp": 1774336914, "stocks": [], "infos": ["\u76f4\u64ad\u4e28\u7f8e\u4f0a\u51b2\u7a81"]}, {"id": "2363809", "title": "\u7814\u62a5\u6398\u91d1\u4e28\u56fd\u76db\u8bc1\u5238\uff1a\u7ef4\u6301\u8d64\u5cf0\u9ec4\u91d1\u201c\u4e70\u5165\u201d\u8bc4\u7ea7\uff0c\u91d1\u4ef7\u9a71\u52a8\u4e1a\u7ee9\u589e\u957f", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u56fd\u76db\u8bc1\u5238\u7814\u62a5\u6307\u51fa\uff0c\u91d1\u4ef7\u9a71\u52a8\u8d64\u5cf0\u9ec4\u91d1\u4e1a\u7ee9\u589e\u957f\uff0c\u7b79\u5212\u91cd\u5927\u80a1\u6743\u53d8\u66f4\u30022025\u5e74\u5b9e\u73b0\u8425\u4e1a\u6536\u5165126.4\u4ebf\u5143\uff0c\u540c\u6bd4+40.0%\uff0c\u5f52\u6bcd\u51c0\u5229\u6da630.8\u4ebf\u5143\uff0c\u540c\u6bd4+74.7%\u3002\u516c\u53f8\u4e8e2026\u5e743\u67081...", "timestamp": "2026-03-24 15:20:23 HKT", "create_timestamp": 1774336823, "stocks": ["600988"], "infos": []}, {"id": "2363808", "title": "\u9526\u827a\u96c6\u56e2\u63a7\u80a1\u521b\u5386\u53f2\u65b0\u9ad8", "content": "\u683c\u9686\u6c473\u670824\u65e5\u4e28\u9526\u827a\u96c6\u56e2\u63a7\u80a1(00565.HK)\u6da82.49%\uff0c\u62a53.2900\u6e2f\u5143\uff0c\u80a1\u4ef7\u521b\u5386\u53f2\u65b0\u9ad8\uff0c\u603b\u5e02\u503c88.46\u4ebf\u6e2f\u5143\u3002", "timestamp": "2026-03-24 15:18:06 HKT", "create_timestamp": 1774336686, "stocks": ["00565"], "infos": []}, {"id": "2363805", "title": "\u7814\u62a5\u6398\u91d1\u4e28\u5e73\u5b89\u8bc1\u5238\uff1a\u7ef4\u6301\u820d\u5f97\u9152\u4e1a\u201c\u63a8\u8350\u201d\u8bc4\u7ea7\uff0c\u77ed\u671f\u4e1a\u7ee9\u627f\u538b\uff0c\u5927\u4f17\u9152\u8868\u73b0\u7a33\u5065", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u5e73\u5b89\u8bc1\u5238\u7814\u62a5\u6307\u51fa\uff0c\u820d\u5f97\u9152\u4e1a25\u5e74\u5b9e\u73b0\u8425\u4e1a\u6536\u516544.19\u4ebf\u5143\uff0c\u540c\u6bd4\u51cf\u5c1117.51%\uff1b\u5f52\u5c5e\u4e8e\u4e0a\u5e02\u516c\u53f8\u80a1\u4e1c\u7684\u51c0\u5229\u6da62.23\u4ebf\u5143\uff0c\u540c\u6bd4\u51cf\u5c1135.51%\u3002\u77ed\u671f\u4e1a\u7ee9\u627f\u538b\uff0c\u5927\u4f17\u9152\u8868\u73b0\u7a33\u5065\u3002\u503c\u5f97\u6ce8\u610f...", "timestamp": "2026-03-24 15:15:37 HKT", "create_timestamp": 1774336537, "stocks": ["600702"], "infos": []}, {"id": "2363799", "title": "ETF\u6536\u8bc4 | A\u80a1\u7f29\u91cf\u53cd\u5f39\uff0c\u9ec4\u91d1\u3001\u533b\u836f\u9886\u6da8\uff0c\u9ec4\u91d1\u80a1ETF\u6c38\u8d62\u6da8\u8fd15%", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5cA\u80a1\u4e09\u5927\u6307\u6570\u4eca\u65e5\u96c6\u4f53\u4e0a\u6da8\uff0c\u622a\u81f3\u6536\u76d8\uff0c\u4e0a\u8bc1\u6307\u6570\u6da81.78%\uff0c\u6df1\u6210\u6307\u6da81.43%\uff0c\u521b\u4e1a\u677f\u6307\u6da80.5%\uff0c\u5317\u8bc150\u6307\u6570\u6da81.94%\uff0c\u6caa\u6df1\u4eac\u4e09\u5e02\u6210\u4ea4\u989d20960\u4ebf\u5143\uff0c\u8f83\u4e0a\u65e5\u7f29\u91cf3520\u4ebf\u5143\uff0c\u4e09...", "timestamp": "2026-03-24 15:13:01 HKT", "create_timestamp": 1774336381, "stocks": ["517520", "513780", "513120", "589720", "159892", "560710", "159268", "159981", "515770", "159752", "562010"], "infos": []}, {"id": "2363790", "title": "\u7814\u62a5\u6398\u91d1\u4e28\u4e1c\u5434\u8bc1\u5238\uff1a\u7ef4\u6301\u9f99\u51c0\u73af\u4fdd\u201c\u4e70\u5165\u201d\u8bc4\u7ea7\uff0c\u77ff\u5c71\u7eff\u7535\u4e0e\u77ff\u5c71\u65b0\u80fd\u6e90\u77ff\u5361\u53cc\u8f6e\u9a71\u52a8", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u4e1c\u5434\u8bc1\u5238\u7814\u62a5\u6307\u51fa\uff0c\u9f99\u51c0\u73af\u4fdd\u77ff\u5c71\u5fae\u7535\u7f51&\u77ff\u5361\u7535\u52a8\u5316\u65e0\u4eba\u5316\uff0c\u6784\u5efa\u77ff\u5c71\u7eff\u8272\u80fd\u6e90\u7efc\u5408\u89e3\u51b3\u65b9\u6848\u30022025\u5e74\u8425\u4e1a\u6536\u5165118.72\u4ebf\u5143\uff0c\u540c\u589e18.49%\uff1b\u5f52\u6bcd\u51c0\u5229\u6da611.12\u4ebf\u5143\uff0c\u540c\u589e33.95%...", "timestamp": "2026-03-24 15:10:42 HKT", "create_timestamp": 1774336242, "stocks": ["600388"], "infos": []}, {"id": "2363789", "title": "Untitled", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u4f0a\u6717\u80fd\u6e90\u90e8\u957f\uff1a\u6211\u4eec\u5728\u5168\u56fd\u8303\u56f4\u5185\u4ee5\u5206\u6563\u5f0f(\u5206\u5e03\u5f0f)\u65b9\u5f0f\u53d1\u7535\u3002\u7136\u800c\uff0c\u5728\u6ce2\u65af\u6e7e\u6cbf\u5cb8\u56fd\u5bb6\u4ee5\u53ca\u72b9\u592a\u590d\u56fd\u4e3b\u4e49\u653f\u6743\u4e2d\uff0c\u53d1\u7535\u662f\u96c6\u4e2d\u5f0f\u7684\uff0c\u56e0\u6b64\u6781\u6613\u53d7\u5230\u653b\u51fb\u3002\u5982\u679c\u4f0a\u6717\u7684\u53d1\u7535\u5382\u906d\u5230\u88ad\u51fb\uff0c\u6211\u4eec\u5c06\u8fc5\u901f\u91cd\u5efa\u5e76\u7ffb...", "timestamp": "2026-03-24 15:09:29 HKT", "create_timestamp": 1774336169, "stocks": [], "infos": ["\u76f4\u64ad\u4e28\u7f8e\u4f0a\u51b2\u7a81"]}, {"id": "2363787", "title": "\u6e2f\u80a1\u5f02\u52a8\u4e28\u94f6\u8bfa\u533b\u836f-B\u5927\u6da8\u8fd128%\uff0c\u9996\u4efd\u5e74\u5ea6\u4e1a\u7ee9\u8868\u73b0\u4eae\u773c+\u6838\u5fc3\u4ea7\u54c1\u5546\u4e1a\u5316\u6f5c\u529b\u5de8\u5927", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u94f6\u8bfa\u533b\u836f-B(2591.HK)\u5348\u540e\u62c9\u5347\uff0c\u4e00\u5ea6\u5927\u6da8\u8fd128%\uff0c\u6700\u9ad8\u89e6\u53ca25.82\u6e2f\u5143\u3002\n\u6d88\u606f\u9762\u4e0a\uff0c\u94f6\u8bfa\u533b\u836f-B\u516c\u5e03\u622a\u81f32025\u5e7412\u670831\u65e5\u6b62\u5e74\u5ea6\u4e1a\u7ee9\uff0c\u96c6\u56e2\u4ea7\u751f\u7ea61.315\u4ebf\u5143\u7684\u6536\u5165\uff0c\u4e3b...", "timestamp": "2026-03-24 15:07:50 HKT", "create_timestamp": 1774336070, "stocks": ["02591"], "infos": ["\u521b\u65b0\u836f"]}, {"id": "2363779", "title": "MSCI\u4e9a\u592a\u6307\u6570\u6da82%", "content": "\u683c\u9686\u6c473\u670824\u65e5\u4e28MSCI\u4e9a\u592a\u6307\u6570\u4e0a\u6da82%\uff0c\u81f3234.50\u70b9\u3002", "timestamp": "2026-03-24 15:05:05 HKT", "create_timestamp": 1774335905, "stocks": [], "infos": []}, {"id": "2363778", "title": "\u5fb7\u5546\u94f6\u884c\uff1a\u4e2d\u4e1c\u6d88\u606f\u4ecd\u5f71\u54cd\u503a\u5e02\uff0c\u4f46\u6f5c\u5728\u8d8b\u52bf\u6b63\u5728\u53d1\u751f\u53d8\u5316", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u5fb7\u56fd\u5546\u4e1a\u94f6\u884c\u5229\u7387\u548c\u4fe1\u8d37\u7814\u7a76\u90e8\u95e8\u7684\u8d1f\u8d23\u4eba\u514b\u91cc\u65af\u6258\u592b\u00b7\u91cc\u683c\u5c14\u8868\u793a\uff0c\u503a\u5238\u5e02\u573a\u4ecd\u53d7\u4e2d\u4e1c\u6d88\u606f\u7684\u5f71\u54cd\uff0c\u4f46\u8fc7\u53bb\u51e0\u5929\u5176\u5185\u5728\u8d70\u52bf\u5df2\u6709\u6240\u53d8\u5316\u3002\u91cd\u70b9\u53ef\u80fd\u4ece\u5bf9\u6297\u901a\u80c0\u8f6c\u5411\u5176\u5e26\u6765\u7684\u526f\u4f5c\u7528\u3002\u5728\u6b27\u5143\u533a\uff0cPMI\u521d\u503c\u5c06...", "timestamp": "2026-03-24 15:04:33 HKT", "create_timestamp": 1774335873, "stocks": [], "infos": []}, {"id": "2363777", "title": "\u56fd\u5185\u5546\u54c1\u671f\u8d27\u6536\u76d8\uff1a\u78b3\u9178\u9502\u6da8\u8d856%\uff0c\u96c6\u8fd0\u6b27\u7ebf\u8dcc\u8d855%", "content": "\u683c\u9686\u6c473\u670824\u65e5\u4e28\u56fd\u5185\u5546\u54c1\u671f\u8d27\u6536\u76d8\u6da8\u8dcc\u4e0d\u4e00\uff0c\u78b3\u9178\u9502\u6da8\u8d856%\uff0c\u94af\u6da8\u8d854%\uff0c\u94c2\u6da8\u8d853%\uff0c\u6caa\u9521\u6da8\u8fd13%\uff0c\u6caa\u94f6\u300120\u53f7\u80f6\u6da8\u8d852%\uff0c\u4e0d\u9508\u94a2\u3001\u56fd\u9645\u94dc\u6da8\u8d851%\u3002\u8dcc\u5e45\u65b9\u9762\uff0cLU\u71c3\u6cb9\u8dcc\u8fd19%\uff0c\u539f\u6cb9\u8dcc\u8d858%\uff0c\u4e59\u4e8c\u9187\u8dcc\u8d856...", "timestamp": "2026-03-24 15:03:09 HKT", "create_timestamp": 1774335789, "stocks": [], "infos": []}, {"id": "2363776", "title": "CXO\u9f99\u5934\u4e1a\u7ee9\u9a8c\u8bc1\u9ad8\u666f\u6c14\uff0cBD\u51fa\u6d77\u70ed\u6f6e\u4e0d\u51cf\uff0c\u4f4e\u8d39\u7387\u6e2f\u80a1\u901a\u521b\u65b0\u836fETF\u6613\u65b9\u8fbe\uff08159316\uff09\u6da84.21%", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u533b\u836f\u677f\u5757\u4eca\u65e5\u5168\u7ebf\u8d70\u5f3a\uff0c\u6e2f\u80a1\u901a\u521b\u65b0\u836fETF\u6613\u65b9\u8fbe(159316) \u6da84.21%\uff0c\u6210\u4ea4\u6d3b\u8dc3\u3002\n\u6d88\u606f\u9762\u4e0a\uff0cCXO\u9f99\u5934\u4e1a\u7ee9\u9a8c\u8bc1\u9ad8\u666f\u6c14\uff0cBD\u51fa\u6d77\u70ed\u6f6e\u4e0d\u51cf\u3002\nCXO\u9f99\u5934\u836f\u660e\u5eb7\u5fb723\u65e5\u665a\u95f4\u62ab\u9732\uff0c2...", "timestamp": "2026-03-24 15:03:05 HKT", "create_timestamp": 1774335785, "stocks": ["159316"], "infos": []}, {"id": "2363775", "title": "A\u80a1\u6536\u8bc4\uff1a\u63a2\u5e95\u56de\u5347\uff01\u6caa\u6307\u3001\u6df1\u8bc1\u6210\u6307\u6da8\u8d851%\uff0c\u5168\u5e02\u573a\u8d855100\u80a1\u4e0a\u6da8\uff0c\u7535\u529b\u3001\u519b\u5de5\u80a1\u8d70\u9ad8", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u7f8e\u4f0a\u8c08\u5224\u7684\u5e0c\u671b\u65e5\u76ca\u589e\u5f3a\uff0cA\u80a1\u4e09\u5927\u6307\u6570\u4eca\u65e5\u63a2\u5e95\u56de\u5347\uff0c\u622a\u81f3\u6536\u76d8\uff0c\u6caa\u6307\u6da81.78%\u62a53881\u70b9\uff0c\u6df1\u8bc1\u6210\u6307\u6da81.43%\uff0c\u521b\u4e1a\u677f\u6307\u6da80.5%\u3002\u5168\u5e02\u573a\u6210\u4ea4\u989d2.1\u4e07\u4ebf\u5143\uff0c\u8f83\u524d\u4e00\u4ea4\u6613\u65e5\u7f29\u91cf3520...", "timestamp": "2026-03-24 15:02:40 HKT", "create_timestamp": 1774335760, "stocks": ["601016", "601606"], "infos": []}, {"id": "2363774", "title": "\u97e9\u5a92\uff1aSK\u6d77\u529b\u58eb\u8ba1\u5212\u901a\u8fc7\u8d74\u7f8e\u4e0a\u5e02\u7b79\u8d44\u7ea6100\u4ebf\u7f8e\u5143", "content": "\u683c\u9686\u6c473\u670824\u65e5\u4e28\u636e\u97e9\u56fd\u7ecf\u6d4e\u65e5\u62a5\uff0c\u5728AI\u516c\u53f8\u90fd\u5728\u52a0\u7d27\u6269\u5927\u4ea7\u80fd\uff0c\u4ee5\u6ee1\u8db3AI\u5185\u5b58\u82af\u7247\u9700\u6c42\u4e4b\u9645\uff0cSK\u6d77\u529b\u58eb\u516c\u53f8\u6b63\u8ba1\u5212\u901a\u8fc7\u5728\u7f8e\u56fd\u4e0a\u5e02\u7684\u65b9\u5f0f\u7b79\u96c610\u4e07\u4ebf\u81f315\u4e07\u4ebf\u97e9\u5143\uff08\u7ea6\u5408100\u4ebf\u7f8e\u5143\uff09\u7684\u8d44\u91d1\u3002SK\u6d77\u529b\u58eb\u8ba1\u5212\u53d1...", "timestamp": "2026-03-24 14:59:54 HKT", "create_timestamp": 1774335594, "stocks": ["07709"], "infos": []}, {"id": "2363773", "title": "\u7f8e\u4f0a\u51b2\u7a81\u6df7\u4e71\u4e0b\uff0c\u5370\u5ea6\u5df4\u62c9\u7279\u77f3\u6cb9\u516c\u53f8\u8bbe\u7acb\u65b0\u52a0\u5761\u5206\u516c\u53f8", "content": "\u683c\u9686\u6c473\u670824\u65e5\uff5c\u636e\u77e5\u60c5\u4eba\u58eb\u900f\u9732\uff0c\u5370\u5ea6\u5df4\u62c9\u7279\u77f3\u6cb9\u516c\u53f8\uff08\u5370\u5ea6\u7b2c\u4e8c\u5927\u56fd\u6709\u77f3\u6cb9\u516c\u53f8\uff09\u5c06\u4e8e4\u6708\u5f00\u59cb\u5728\u65b0\u52a0\u5761\u8bbe\u7acb\u529e\u4e8b\u5904\uff0c\u521d\u671f\u91cd\u70b9\u5c06\u653e\u5728\u8be5\u4ea4\u6613\u4e2d\u5fc3\u7684\u539f\u6cb9\u91c7\u8d2d\u4e1a\u52a1\u4e0a\u3002\u4e0a\u8ff0\u4eba\u58eb\u79f0\uff0c\u5df4\u62c9\u7279\u77f3\u6cb9\u5168\u7403\u80fd\u6e90\u670d\u52a1\uff08\u65b0\u52a0\u5761\uff09\u79c1\u4eba...", "timestamp": "2026-03-24 14:57:37 HKT", "create_timestamp": 1774335457, "stocks": [], "infos": []}]';
+    // Escape control characters that might break JSON parsing
+    recentNewsJson = recentNewsJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
+    recentNews = recentNewsJson ? JSON.parse(recentNewsJson) : [];
+} catch (e) {
+    console.warn('Failed to parse recentNews:', e);
+    recentNews = [];
+}
+
+try {
+    const marketsJson = '["BJ", "HK", "SH", "SZ", "US"]';
+    availableMarkets = marketsJson ? JSON.parse(marketsJson) : [];
+} catch (e) {
+    console.warn('Failed to parse availableMarkets:', e);
+    availableMarkets = [];
+}
+
+try {
+    marketStockData = JSON.parse('{"BJ": [], "HK": [{"code": "00291", "name": "\u534e\u6da6\u5564\u9152", "market": "HK", "frequency": 6}, {"code": "07709", "name": "XL\u4e8c\u5357\u65b9\u6d77\u529b\u58eb", "market": "HK", "frequency": 5}, {"code": "06181", "name": "\u8001\u94fa\u9ec4\u91d1", "market": "HK", "frequency": 5}, {"code": "09988", "name": "\u963f\u91cc\u5df4\u5df4-W", "market": "HK", "frequency": 4}, {"code": "HSTECH", "name": "\u6052\u751f\u79d1\u6280\u6307\u6570", "market": "HK", "frequency": 3}, {"code": "02097", "name": "\u871c\u96ea\u96c6\u56e2", "market": "HK", "frequency": 3}, {"code": "02729", "name": "\u51ef\u4e50\u58eb\u79d1\u6280", "market": "HK", "frequency": 2}, {"code": "HSI", "name": "\u6052\u751f\u6307\u6570", "market": "HK", "frequency": 2}, {"code": "02359", "name": "\u836f\u660e\u5eb7\u5fb7", "market": "HK", "frequency": 2}, {"code": "06990", "name": "\u79d1\u4f26\u535a\u6cf0\u751f\u7269-B", "market": "HK", "frequency": 2}], "SH": [{"code": "000001", "name": "\u4e0a\u8bc1\u6307\u6570", "market": "SH", "frequency": 2}, {"code": "603259", "name": "\u836f\u660e\u5eb7\u5fb7", "market": "SH", "frequency": 2}, {"code": "517520", "name": "\u9ec4\u91d1\u80a1ETF\u6c38\u8d62", "market": "SH", "frequency": 2}, {"code": "515770", "name": "MSCI\u4e2d\u56fdA\u80a1ETF\u6469\u6839", "market": "SH", "frequency": 2}, {"code": "603115", "name": "\u6d77\u661f\u80a1\u4efd", "market": "SH", "frequency": 1}, {"code": "600612", "name": "\u8001\u51e4\u7965", "market": "SH", "frequency": 1}, {"code": "603929", "name": "\u4e9a\u7fd4\u96c6\u6210", "market": "SH", "frequency": 1}, {"code": "600919", "name": "\u6c5f\u82cf\u94f6\u884c", "market": "SH", "frequency": 1}, {"code": "601825", "name": "\u6caa\u519c\u5546\u884c", "market": "SH", "frequency": 1}, {"code": "688766", "name": "\u666e\u5189\u80a1\u4efd", "market": "SH", "frequency": 1}], "SZ": [{"code": "399006", "name": "\u521b\u4e1a\u677f\u6307", "market": "SZ", "frequency": 4}, {"code": "000528", "name": "\u67f3\u5de5", "market": "SZ", "frequency": 1}, {"code": "301491", "name": "\u6c49\u6851\u79d1\u6280", "market": "SZ", "frequency": 1}, {"code": "301665", "name": "\u6cf0\u79be\u80a1\u4efd", "market": "SZ", "frequency": 1}, {"code": "159157", "name": "\u6709\u8272\u91d1\u5c5eETF\u5929\u5f18", "market": "SZ", "frequency": 1}, {"code": "159830", "name": "\u91d1ETF\u5929\u5f18", "market": "SZ", "frequency": 1}, {"code": "159859", "name": "\u751f\u7269\u533b\u836fETF\u5929\u5f18", "market": "SZ", "frequency": 1}, {"code": "300274", "name": "\u9633\u5149\u7535\u6e90", "market": "SZ", "frequency": 1}, {"code": "000711", "name": "ST\u4eac\u84dd", "market": "SZ", "frequency": 1}, {"code": "002797", "name": "\u7b2c\u4e00\u521b\u4e1a", "market": "SZ", "frequency": 1}], "US": [{"code": "BABA", "name": "\u963f\u91cc\u5df4\u5df4", "market": "US", "frequency": 4}, {"code": "TM", "name": "\u4e30\u7530\u6c7d\u8f66", "market": "US", "frequency": 2}, {"code": "GILD", "name": "\u5409\u5229\u5fb7\u79d1\u5b66", "market": "US", "frequency": 2}, {"code": ".NDX", "name": "\u7eb3\u65af\u8fbe\u514b100\u6307\u6570", "market": "US", "frequency": 1}, {"code": "AAPL", "name": "\u82f9\u679c", "market": "US", "frequency": 1}, {"code": "HSBC", "name": "\u6c47\u4e30\u63a7\u80a1", "market": "US", "frequency": 1}, {"code": "EL", "name": "\u96c5\u8bd7\u5170\u9edb", "market": "US", "frequency": 1}, {"code": "NIO", "name": "\u851a\u6765", "market": "US", "frequency": 1}, {"code": "APO", "name": "\u963f\u6ce2\u7f57\u5168\u7403\u7ba1\u7406", "market": "US", "frequency": 1}, {"code": "CVX", "name": "\u96ea\u4f5b\u9f99", "market": "US", "frequency": 1}]}') || {};
+} catch (e) {
+    console.warn('Failed to parse marketStockData:', e);
+}
+
+// Populate Top 3 Stocks
+const topStocksList = document.getElementById('top-stocks-list');
+if (top3Stocks && top3Stocks.length > 0) {
+    topStocksList.innerHTML = top3Stocks.map(stock => `
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-900">${stock.code}</span>
+            <span class="text-xs text-gray-500">${stock.frequency}</span>
+        </div>
+    `).join('');
+} else {
+    topStocksList.innerHTML = '<div class="text-sm text-gray-400">N/A</div>';
+}
+
+// Populate Top 3 Categories
+const topInfosList = document.getElementById('top-infos-list');
+if (top3Infos && top3Infos.length > 0) {
+    topInfosList.innerHTML = top3Infos.map(info => `
+        <div class="flex justify-between items-center">
+            <span class="text-sm font-medium text-gray-900 truncate">${info.name}</span>
+            <span class="text-xs text-gray-500">${info.frequency}</span>
+        </div>
+    `).join('');
+} else {
+    topInfosList.innerHTML = '<div class="text-sm text-gray-400">N/A</div>';
+}
+
+// Populate Recent News
+const recentNewsList = document.getElementById('recent-news-list');
+if (recentNews && recentNews.length > 0) {
+    recentNewsList.innerHTML = recentNews.map(news => `
+        <li class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 truncate">${news.title}</p>
+                    <p class="text-sm text-gray-500 truncate">${news.content}</p>
+                    <div class="mt-1 flex items-center space-x-2">
+                        ${news.stocks.map(stock => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">${stock}</span>`).join('')}
+                        ${news.infos.map(info => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">${info}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="ml-4 flex-shrink-0 text-sm text-gray-500">
+                    ${news.timestamp}
+                </div>
+            </div>
+        </li>
+    `).join('');
+    
+    // Set relative time for the most recent news
+    const relativeTimeElement = document.getElementById('relative-time');
+    if (relativeTimeElement && recentNews[0].create_timestamp) {
+        updateRelativeTime(recentNews[0].create_timestamp);
+    }
+} else {
+    recentNewsList.innerHTML = '<li class="px-6 py-4 text-sm text-gray-400">No recent news</li>';
+}
+
+// Relative time calculation
+function updateRelativeTime(timestamp) {
+    const relativeTimeElement = document.getElementById('relative-time');
+    if (!relativeTimeElement) return;
+    
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    let relativeTime = '';
+    
+    if (days > 0) {
+        relativeTime = days + ' day' + (days > 1 ? 's' : '') + ' ago';
+    } else if (hours > 0) {
+        relativeTime = hours + ' hour' + (hours > 1 ? 's' : '') + ' ago';
+    } else if (minutes > 0) {
+        relativeTime = minutes + ' min' + (minutes > 1 ? 's' : '') + ' ago';
+    } else {
+        relativeTime = 'Just now';
+    }
+    
+    relativeTimeElement.textContent = relativeTime;
+}
+
+// Update relative time every minute
+setInterval(() => {
+    if (recentNews && recentNews.length > 0 && recentNews[0].create_timestamp) {
+        updateRelativeTime(recentNews[0].create_timestamp);
+    }
+}, 60000);
+
+// Stocks Chart - with error handling for canvas reuse
+const stocksCanvas = document.getElementById('stocksChart');
+if (stocksCanvas) {
+    // Check if chart already exists on this canvas
+    const existingChart = Chart.getChart(stocksCanvas);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+    
+    new Chart(stocksCanvas, {
+        type: 'bar',
+        data: {
+            labels: stockFrequency.map(s => s.code),
+            datasets: [{
+                label: 'Mentions',
+                data: stockFrequency.map(s => s.frequency),
+                backgroundColor: 'rgba(59, 130, 246, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y'
+        }
+    });
+}
+
+// Infos Chart
+new Chart(document.getElementById('infosChart'), {
+    type: 'bar',
+    data: {
+        labels: infoFrequency.map(i => i.name),
+        datasets: [{
+            label: 'Mentions',
+            data: infoFrequency.map(i => i.frequency),
+            backgroundColor: 'rgba(16, 185, 129, 0.5)'
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y'
+    }
+});
+
+// Market Filter Functionality
+let selectedMarkets = new Set();
+let stocksChart = null;
+
+// Initialize market checkboxes
+function initializeMarketCheckboxes() {
+    const marketCheckboxesContainer = document.getElementById('market-checkboxes');
+    if (!marketCheckboxesContainer || !availableMarkets || availableMarkets.length === 0) {
+        return;
+    }
+    
+    // Default markets to select (HK and US)
+    const defaultMarkets = ['HK', 'US'];
+    
+    // Create checkboxes for each available market
+    marketCheckboxesContainer.innerHTML = availableMarkets.map(market => `
+        <label class="inline-flex items-center">
+            <input type="checkbox" class="market-checkbox form-checkbox h-4 w-4 text-blue-600" 
+                   value="${market}" ${defaultMarkets.includes(market) ? 'checked' : ''}>
+            <span class="ml-2 text-sm text-gray-700">${market}</span>
+        </label>
+    `).join('');
+    
+    // Add event listeners to checkboxes
+    const checkboxes = document.querySelectorAll('.market-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                selectedMarkets.add(this.value);
+            } else {
+                selectedMarkets.delete(this.value);
+            }
+            updateStocksChart();
+        });
+    });
+    
+    // Initialize with only default markets selected
+    selectedMarkets = new Set(defaultMarkets.filter(market => availableMarkets.includes(market)));
+}
+
+// Update stocks chart based on selected markets
+function updateStocksChart() {
+    if (!stocksChart) return;
+    
+    // Use market-specific data directly from backend
+    let combinedData = [];
+    
+    if (selectedMarkets.size === availableMarkets.length) {
+        // All markets selected - use the default stock frequency data
+        combinedData = stockFrequency;
+    } else {
+        // Specific markets selected - combine data from selected markets
+        selectedMarkets.forEach(market => {
+            if (marketStockData[market]) {
+                marketStockData[market].forEach(stock => {
+                    combinedData.push({
+                        code: stock.code,
+                        name: stock.name,
+                        market: stock.market,
+                        frequency: stock.frequency
+                    });
+                });
+            }
+        });
+        
+        // Sort by frequency and take top 10
+        combinedData.sort((a, b) => b.frequency - a.frequency);
+        combinedData = combinedData.slice(0, 10);
+    }
+    
+    // Update chart
+    stocksChart.data.labels = combinedData.map(s => s.code);
+    stocksChart.data.datasets[0].data = combinedData.map(s => s.frequency);
+    stocksChart.update();
+}
+
+// Initialize the stocks chart
+function initializeStocksChart() {
+    const ctx = document.getElementById('stocksChart');
+    if (!ctx) return;
+    
+    // Check if chart already exists and destroy it
+    const existingChart = Chart.getChart(ctx);
+    if (existingChart) {
+        existingChart.destroy();
+    }
+    
+    stocksChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: stockFrequency.map(s => s.code),
+            datasets: [{
+                label: 'Mentions',
+                data: stockFrequency.map(s => s.frequency),
+                backgroundColor: 'rgba(59, 130, 246, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y'
+        }
+    });
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeStocksChart();
+    initializeMarketCheckboxes();
+});
+</script>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-lg mt-8">
+        <div class="max-w-7xl mx-auto py-4 px-4">
+            <p class="text-center text-gray-500 text-sm">HK Stock News Dashboard - Data from Gelonghui</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

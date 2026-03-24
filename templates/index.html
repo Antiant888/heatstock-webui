@@ -123,7 +123,10 @@ try {
 }
 
 try {
-    const marketsJson = '{{ available_markets_json }}';
+    // Safely parse availableMarkets JSON - handle control characters
+    let marketsJson = '{{ available_markets_json|safe }}';
+    // Escape control characters that might break JSON parsing
+    marketsJson = marketsJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     availableMarkets = marketsJson ? JSON.parse(marketsJson) : [];
 } catch (e) {
     console.warn('Failed to parse availableMarkets:', e);

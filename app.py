@@ -105,8 +105,8 @@ async def dashboard(request: Request):
         for market in available_markets:
             market_stock_data[market] = get_stock_frequency_today_by_market(session, market, limit=10)
         
-        # Get top 10 info categories for chart
-        info_frequency = get_info_frequency(session, limit=10)
+        # Get top 10 info categories for chart (today only)
+        info_frequency = get_info_frequency_today(session, limit=10)
         
         # Get top 3 info categories for stats card (today only)
         top_3_infos = get_info_frequency_today(session, limit=3)
