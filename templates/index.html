@@ -309,22 +309,24 @@ function initializeMarketCheckboxes() {
 function updateStocksChart() {
     if (!stocksChart) return;
     
-    // Combine data from selected markets
+    // Combine data from selected markets - avoid double counting
     let combinedData = {};
     
     selectedMarkets.forEach(market => {
         if (marketStockData[market]) {
             marketStockData[market].forEach(stock => {
-                const key = stock.code;
+                const key = `${stock.code}-${stock.market}`; // Use code-market as unique key
                 if (!combinedData[key]) {
                     combinedData[key] = {
                         code: stock.code,
                         name: stock.name,
                         market: stock.market,
-                        frequency: 0
+                        frequency: stock.frequency
                     };
+                } else {
+                    // If same stock appears in multiple markets, take the higher frequency
+                    combinedData[key].frequency = Math.max(combinedData[key].frequency, stock.frequency);
                 }
-                combinedData[key].frequency += stock.frequency;
             });
         }
     });
