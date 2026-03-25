@@ -258,6 +258,13 @@ function initializeCharts() {
                     legend: {
                         labels: { color: colors.text }
                     }
+                },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const stockCode = currentStockData[index].code;
+                        filterByStock(stockCode);
+                    }
                 }
             }
         });
