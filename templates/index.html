@@ -296,6 +296,7 @@ if (infosCanvas) {
 let selectedMarkets = new Set();
 let stocksChart = null;
 let activeFilter = { type: null, value: null };
+let currentStockData = stockFrequency; // Track currently displayed stock data
 
 // Initialize market checkboxes
 function initializeMarketCheckboxes() {
@@ -363,6 +364,9 @@ function updateStocksChart() {
         combinedData = combinedData.slice(0, 10);
     }
     
+    // Update current stock data for click handler
+    currentStockData = combinedData;
+    
     // Update chart with code and name
     stocksChart.data.labels = combinedData.map(s => s.name ? `${s.code} (${s.name})` : s.code);
     stocksChart.data.datasets[0].data = combinedData.map(s => s.frequency);
@@ -396,7 +400,7 @@ function initializeStocksChart() {
             onClick: (event, elements) => {
                 if (elements.length > 0) {
                     const index = elements[0].index;
-                    const stockCode = stockFrequency[index].code;
+                    const stockCode = currentStockData[index].code;
                     filterByStock(stockCode);
                 }
             }
@@ -497,7 +501,8 @@ function highlightSelectedBar(type, value) {
     if (!chart) return;
     
     const labels = chart.data.labels;
-    const index = labels.indexOf(value);
+    // Find index by checking if label starts with value (handles "AAPL (Apple Inc.)" case)
+    const index = labels.findIndex(label => label === value || label.startsWith(value + ' '));
     
     if (index !== -1) {
         const colors = chart.data.datasets[0].backgroundColor;
