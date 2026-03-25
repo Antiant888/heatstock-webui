@@ -77,7 +77,7 @@ async def dashboard(request: Request):
         today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
         # Convert HKT midnight to UTC for database comparison
         today_start_utc = today_start_hkt.astimezone(timezone.utc)
-        today_start_ts = int(today_start_utc.timestamp())
+        today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
         today_count = session.query(HKStockLive)\
             .filter(HKStockLive.create_timestamp >= today_start_ts)\
             .count()
@@ -474,7 +474,7 @@ def get_stock_frequency_today(session, limit=50):
     today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert HKT midnight to UTC for database comparison
     today_start_utc = today_start_hkt.astimezone(timezone.utc)
-    today_start_ts = int(today_start_utc.timestamp())
+    today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
     
     # Get today's news with related_stocks
     news_items = session.query(HKStockLive.related_stocks)\
@@ -512,7 +512,7 @@ def get_info_frequency_today(session, limit=50):
     today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert HKT midnight to UTC for database comparison
     today_start_utc = today_start_hkt.astimezone(timezone.utc)
-    today_start_ts = int(today_start_utc.timestamp())
+    today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
     
     # Get today's news with related_infos
     news_items = session.query(HKStockLive.related_infos)\
@@ -578,7 +578,7 @@ def get_stock_frequency_today_by_market(session, market, limit=50):
     today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert HKT midnight to UTC for database comparison
     today_start_utc = today_start_hkt.astimezone(timezone.utc)
-    today_start_ts = int(today_start_utc.timestamp())
+    today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
     
     # Get today's news with related_stocks filtered by market
     news_items = session.query(HKStockLive.related_stocks)\
