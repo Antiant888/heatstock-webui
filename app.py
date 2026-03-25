@@ -111,10 +111,17 @@ async def dashboard(request: Request):
         # Get top 3 info categories for stats card (today only)
         top_3_infos = get_info_frequency_today(session, limit=3)
         
-        # Get recent news (last 15)
+        # Get today's news (up to 50 items)
+        from datetime import timezone as tz
+        hkt_timezone = tz(timedelta(hours=8))
+        today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_utc = today_start_hkt.astimezone(timezone.utc)
+        today_start_ts = int(today_start_utc.timestamp())
+        
         recent_news = session.query(HKStockLive)\
+            .filter(HKStockLive.create_timestamp >= today_start_ts)\
             .order_by(desc(HKStockLive.create_timestamp))\
-            .limit(15)\
+            .limit(50)\
             .all()
         
         recent_news_data = []
