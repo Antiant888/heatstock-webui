@@ -407,6 +407,53 @@ async def api_test_dashboard_context():
     finally:
         session.close()
 
+@app.get("/api/news/today")
+async def api_news_today(
+    stock: str = Query(None),
+    info: str = Query(None)
+):
+    """Get all news from today with optional stock/info filters"""
+    session = get_session(engine)
+    try:
+        # Calculate today's start in HKT timezone
+        from datetime import timezone as tz
+        hkt_timezone = tz(timedelta(hours=8))
+        today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_utc = today_start_hkt.astimezone(timezone.utc)
+        today_start_ts = int(today_start_utc.timestamp())
+        
+        # Build query for today's news
+        query = session.query(HKStockLive)\
+            .filter(HKStockLive.create_timestamp >= today_start_ts)
+        
+        # Apply stock filter if provided
+        if stock:
+            query = query.filter(HKStockLive.related_stocks.contains(stock))
+        
+        # Apply info filter if provided
+        if info:
+            query = query.filter(HKStockLive.related_infos.contains(info))
+        
+        # Get all matching news
+        news_items = query.order_by(desc(HKStockLive.create_timestamp)).all()
+        
+        # Format response
+        items = []
+        for news in news_items:
+            items.append({
+                'id': news.id,
+                'title': news.title or 'Untitled',
+                'content': (news.content[:100] + '...') if news.content and len(news.content) > 100 else (news.content or ''),
+                'timestamp': timestamp_to_hkt(news.create_timestamp),
+                'create_timestamp': news.create_timestamp,
+                'stocks': extract_stock_codes(news.related_stocks),
+                'infos': extract_info_names(news.related_infos)
+            })
+        
+        return items
+    finally:
+        session.close()
+
 # ────────────────────────────────────────────────
 # Helper Functions
 # ────────────────────────────────────────────────

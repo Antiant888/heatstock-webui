@@ -409,16 +409,33 @@ function initializeStocksChart() {
 }
 
 // Filter Recent News based on active filter
-function filterRecentNews() {
+async function filterRecentNews() {
     const recentNewsList = document.getElementById('recent-news-list');
     if (!recentNewsList) return;
     
     let filteredNews = recentNews;
     
-    if (activeFilter.type === 'stock') {
-        filteredNews = recentNews.filter(news => news.stocks.includes(activeFilter.value));
-    } else if (activeFilter.type === 'info') {
-        filteredNews = recentNews.filter(news => news.infos.includes(activeFilter.value));
+    // If a filter is active, fetch all filtered news from API
+    if (activeFilter.type) {
+        try {
+            const params = new URLSearchParams();
+            if (activeFilter.type === 'stock') {
+                params.append('stock', activeFilter.value);
+            } else if (activeFilter.type === 'info') {
+                params.append('info', activeFilter.value);
+            }
+            
+            const response = await fetch(`/api/news/today?${params.toString()}`);
+            if (response.ok) {
+                filteredNews = await response.json();
+            } else {
+                console.error('Failed to fetch filtered news');
+                filteredNews = [];
+            }
+        } catch (error) {
+            console.error('Error fetching filtered news:', error);
+            filteredNews = [];
+        }
     }
     
     // Render filter chip if filter is active
@@ -438,7 +455,7 @@ function filterRecentNews() {
                         </button>
                     </span>
                 </div>
-                <span class="text-sm text-gray-500">${filteredNews.length} of ${recentNews.length} news</span>
+                <span class="text-sm text-gray-500">${filteredNews.length} news found</span>
             </div>
         `;
     }
