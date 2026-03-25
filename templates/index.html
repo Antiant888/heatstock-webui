@@ -614,10 +614,23 @@ function resetBarHighlights() {
     }
 }
 
+// Button reference management
+let refreshBtn = null;
+let refreshIcon = null;
+
+function initRefreshButton() {
+    refreshBtn = document.getElementById('refresh-btn');
+    refreshIcon = document.getElementById('refresh-icon');
+}
+
 // Manual refresh function
 async function manualRefresh() {
-    const refreshBtn = document.getElementById('refresh-btn');
-    const refreshIcon = document.getElementById('refresh-icon');
+    // Ensure button references are initialized
+    if (!refreshBtn) initRefreshButton();
+    if (!refreshBtn || !refreshIcon) {
+        console.error('Refresh button not found');
+        return;
+    }
     
     // Show loading state
     refreshBtn.disabled = true;
@@ -649,6 +662,9 @@ async function manualRefresh() {
         // Update current news data
         currentNewsData = recentNews;
         
+        // Update last check timestamp
+        lastCheckTimestamp = Date.now();
+        
         // Re-render all components
         updateTop3Stocks();
         updateTop3Infos();
@@ -660,6 +676,9 @@ async function manualRefresh() {
         if (recentNews && recentNews.length > 0 && recentNews[0].create_timestamp) {
             updateRelativeTime(recentNews[0].create_timestamp);
         }
+        
+        // Hide notification badge
+        hideUpdateBadge();
         
         // Show success notification
         showUpdateNotification('Dashboard refreshed successfully!');
@@ -678,6 +697,51 @@ async function manualRefresh() {
             Refresh
         `;
     }
+}
+
+// Periodic update checking
+let lastCheckTimestamp = Date.now();
+const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
+
+async function checkForUpdates() {
+    try {
+        const response = await fetch(`/api/check-updates?last_check=${lastCheckTimestamp}`);
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        
+        if (data.has_updates) {
+            showUpdateBadge(data.new_count);
+        }
+    } catch (error) {
+        console.error('Update check failed:', error);
+    }
+}
+
+function showUpdateBadge(newCount) {
+    const badge = document.getElementById('update-badge');
+    if (badge) {
+        badge.textContent = `🔄 ${newCount} new updates available`;
+        badge.classList.remove('hidden');
+        badge.onclick = manualRefresh;
+        badge.style.cursor = 'pointer';
+    }
+}
+
+function hideUpdateBadge() {
+    const badge = document.getElementById('update-badge');
+    if (badge) {
+        badge.classList.add('hidden');
+    }
+}
+
+// Start periodic update checking
+function startPeriodicUpdateCheck() {
+    // Check immediately on load
+    checkForUpdates();
+    
+    // Then check every 5 minutes
+    setInterval(checkForUpdates, CHECK_INTERVAL);
 }
 
 // Update Top 3 Stocks display
@@ -736,6 +800,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     initializeMarketCheckboxes();
     renderNewsList(); // Render initial news with expand/collapse functionality
+    
+    // Start periodic update checking
+    startPeriodicUpdateCheck();
 });
 </script>
 {% endblock %}

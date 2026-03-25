@@ -525,6 +525,31 @@ async def api_dashboard_refresh():
     finally:
         session.close()
 
+@app.get("/api/check-updates")
+async def api_check_updates(last_check: int = Query(0)):
+    """Check if new data is available since last check"""
+    session = get_session(engine)
+    try:
+        # Get count of news created after last_check timestamp
+        new_count = session.query(HKStockLive)\
+            .filter(HKStockLive.create_timestamp > last_check)\
+            .count()
+        
+        # Get latest news timestamp
+        latest_news = session.query(HKStockLive)\
+            .order_by(desc(HKStockLive.create_timestamp))\
+            .first()
+        
+        latest_timestamp = latest_news.create_timestamp if latest_news else 0
+        
+        return {
+            'has_updates': new_count > 0,
+            'new_count': new_count,
+            'latest_timestamp': latest_timestamp
+        }
+    finally:
+        session.close()
+
 # ────────────────────────────────────────────────
 # Helper Functions
 # ────────────────────────────────────────────────
