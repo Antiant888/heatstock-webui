@@ -34,6 +34,9 @@ function initTheme() {
                 if (lightIcon) lightIcon.classList.add('hidden');
                 if (darkIcon) darkIcon.classList.remove('hidden');
             }
+            
+            // Dispatch event for charts to update colors
+            window.dispatchEvent(new CustomEvent('themeChanged'));
         });
     }
 }
@@ -139,3 +142,19 @@ window.utils = {
     formatDate,
     debounce
 };
+
+// Theme-aware chart colors
+function getChartColors() {
+    const isDark = document.documentElement.classList.contains('dark');
+    return {
+        stocks: isDark ? 'rgba(96, 165, 250, 0.7)' : 'rgba(59, 130, 246, 0.5)',
+        stocksBorder: isDark ? 'rgba(96, 165, 250, 1)' : 'rgba(59, 130, 246, 1)',
+        infos: isDark ? 'rgba(52, 211, 153, 0.7)' : 'rgba(16, 185, 129, 0.5)',
+        infosBorder: isDark ? 'rgba(52, 211, 153, 1)' : 'rgba(16, 185, 129, 1)',
+        text: isDark ? '#e5e7eb' : '#374151',
+        grid: isDark ? '#4b5563' : '#e5e7eb'
+    };
+}
+
+// Export for use in other scripts
+window.getChartColors = getChartColors;

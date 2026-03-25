@@ -35,16 +35,17 @@
 // Info frequency data from backend
 const infoFrequency = JSON.parse('{{ info_frequency_json|safe }}');
 
-// Render chart
-new Chart(document.getElementById('infoChart'), {
+// Render chart with theme-aware colors
+const colors = window.getChartColors();
+const infoChart = new Chart(document.getElementById('infoChart'), {
     type: 'bar',
     data: {
         labels: infoFrequency.map(i => i.name),
         datasets: [{
             label: 'Mentions',
             data: infoFrequency.map(i => i.frequency),
-            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-            borderColor: 'rgba(16, 185, 129, 1)',
+            backgroundColor: colors.infos,
+            borderColor: colors.infosBorder,
             borderWidth: 1
         }]
     },
@@ -52,12 +53,35 @@ new Chart(document.getElementById('infoChart'), {
         responsive: true,
         indexAxis: 'y',
         scales: {
-            x: { beginAtZero: true }
+            x: { 
+                beginAtZero: true,
+                ticks: { color: colors.text },
+                grid: { color: colors.grid }
+            },
+            y: {
+                ticks: { color: colors.text },
+                grid: { color: colors.grid }
+            }
         },
         plugins: {
-            legend: { display: false }
+            legend: { 
+                display: false,
+                labels: { color: colors.text }
+            }
         }
     }
+});
+
+// Update chart colors when theme changes
+window.addEventListener('themeChanged', function() {
+    const newColors = window.getChartColors();
+    infoChart.data.datasets[0].backgroundColor = newColors.infos;
+    infoChart.data.datasets[0].borderColor = newColors.infosBorder;
+    infoChart.options.scales.x.ticks.color = newColors.text;
+    infoChart.options.scales.y.ticks.color = newColors.text;
+    infoChart.options.scales.x.grid.color = newColors.grid;
+    infoChart.options.scales.y.grid.color = newColors.grid;
+    infoChart.update();
 });
 
 // Render table

@@ -36,16 +36,17 @@
 // Stock frequency data from backend
 const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
 
-// Render chart
-new Chart(document.getElementById('stockChart'), {
+// Render chart with theme-aware colors
+const colors = window.getChartColors();
+const stockChart = new Chart(document.getElementById('stockChart'), {
     type: 'bar',
     data: {
         labels: stockFrequency.map(s => s.code),
         datasets: [{
             label: 'Mentions',
             data: stockFrequency.map(s => s.frequency),
-            backgroundColor: 'rgba(59, 130, 246, 0.7)',
-            borderColor: 'rgba(59, 130, 246, 1)',
+            backgroundColor: colors.stocks,
+            borderColor: colors.stocksBorder,
             borderWidth: 1
         }]
     },
@@ -53,12 +54,35 @@ new Chart(document.getElementById('stockChart'), {
         responsive: true,
         indexAxis: 'y',
         scales: {
-            x: { beginAtZero: true }
+            x: { 
+                beginAtZero: true,
+                ticks: { color: colors.text },
+                grid: { color: colors.grid }
+            },
+            y: {
+                ticks: { color: colors.text },
+                grid: { color: colors.grid }
+            }
         },
         plugins: {
-            legend: { display: false }
+            legend: { 
+                display: false,
+                labels: { color: colors.text }
+            }
         }
     }
+});
+
+// Update chart colors when theme changes
+window.addEventListener('themeChanged', function() {
+    const newColors = window.getChartColors();
+    stockChart.data.datasets[0].backgroundColor = newColors.stocks;
+    stockChart.data.datasets[0].borderColor = newColors.stocksBorder;
+    stockChart.options.scales.x.ticks.color = newColors.text;
+    stockChart.options.scales.y.ticks.color = newColors.text;
+    stockChart.options.scales.x.grid.color = newColors.grid;
+    stockChart.options.scales.y.grid.color = newColors.grid;
+    stockChart.update();
 });
 
 // Render table
