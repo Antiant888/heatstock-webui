@@ -81,6 +81,7 @@ let recentNews = [];
 let availableMarkets = [];
 let marketStockData = {};
 let expandedNewsId = null; // Track which news is currently expanded
+let currentNewsData = recentNews; // Track current news data (filtered or unfiltered)
 
 try {
     dailyCounts = JSON.parse('{{ daily_counts_json }}') || [];
@@ -411,6 +412,9 @@ async function filterRecentNews() {
         }
     }
     
+    // Update current news data for toggleNewsExpand to use
+    currentNewsData = filteredNews;
+    
     // Use the renderNewsList function to display filtered news
     renderNewsList(filteredNews);
 }
@@ -424,8 +428,8 @@ function toggleNewsExpand(newsId) {
         // Clicking different item - expand new one (old one collapses automatically)
         expandedNewsId = newsId;
     }
-    // Re-render the news list
-    renderNewsList();
+    // Re-render the news list with current news data (filtered or unfiltered)
+    renderNewsList(currentNewsData);
 }
 
 // Render news list with expand/collapse functionality
