@@ -77,13 +77,13 @@ async def dashboard(request: Request):
         today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
         # Convert HKT midnight to UTC for database comparison
         today_start_utc = today_start_hkt.astimezone(timezone.utc)
-        today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
+        today_start_ts = int(today_start_utc.timestamp())
         today_count = session.query(HKStockLive)\
             .filter(HKStockLive.create_timestamp >= today_start_ts)\
             .count()
         
         # Get news per day (last 30 days)
-        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1000)
+        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
         daily_counts = session.query(
             func.date(func.from_unixtime(HKStockLive.create_timestamp / 1000)).label('date'),
             func.count(HKStockLive.id).label('count')
@@ -116,7 +116,7 @@ async def dashboard(request: Request):
         hkt_timezone = tz(timedelta(hours=8))
         today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
         today_start_utc = today_start_hkt.astimezone(timezone.utc)
-        today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
+        today_start_ts = int(today_start_utc.timestamp())
         
         recent_news = session.query(HKStockLive)\
             .filter(HKStockLive.create_timestamp >= today_start_ts)\
@@ -239,7 +239,7 @@ async def api_news(
         if date_from:
             try:
                 from datetime import datetime as dt
-                date_from_ts = int(dt.strptime(date_from, "%Y-%m-%d").timestamp() * 1000)
+                date_from_ts = int(dt.strptime(date_from, "%Y-%m-%d").timestamp())
                 query = query.filter(HKStockLive.create_timestamp >= date_from_ts)
             except ValueError:
                 pass
@@ -247,7 +247,7 @@ async def api_news(
         if date_to:
             try:
                 from datetime import datetime as dt
-                date_to_ts = int((dt.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)).timestamp() * 1000)
+                date_to_ts = int((dt.strptime(date_to, "%Y-%m-%d") + timedelta(days=1)).timestamp())
                 query = query.filter(HKStockLive.create_timestamp < date_to_ts)
             except ValueError:
                 pass
@@ -310,7 +310,7 @@ async def api_stats_overview():
         total_count = session.query(HKStockLive).count()
         
         # Get news per day (last 30 days)
-        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp() * 1000)
+        thirty_days_ago = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
         daily_counts = session.query(
             func.date(func.from_unixtime(HKStockLive.create_timestamp / 1000)).label('date'),
             func.count(HKStockLive.id).label('count')
@@ -474,7 +474,7 @@ def get_stock_frequency_today(session, limit=50):
     today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert HKT midnight to UTC for database comparison
     today_start_utc = today_start_hkt.astimezone(timezone.utc)
-    today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
+    today_start_ts = int(today_start_utc.timestamp())
     
     # Get today's news with related_stocks
     news_items = session.query(HKStockLive.related_stocks)\
@@ -512,7 +512,7 @@ def get_info_frequency_today(session, limit=50):
     today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert HKT midnight to UTC for database comparison
     today_start_utc = today_start_hkt.astimezone(timezone.utc)
-    today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
+    today_start_ts = int(today_start_utc.timestamp())
     
     # Get today's news with related_infos
     news_items = session.query(HKStockLive.related_infos)\
@@ -578,7 +578,7 @@ def get_stock_frequency_today_by_market(session, market, limit=50):
     today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
     # Convert HKT midnight to UTC for database comparison
     today_start_utc = today_start_hkt.astimezone(timezone.utc)
-    today_start_ts = int(today_start_utc.timestamp() * 1000)  # Convert to milliseconds
+    today_start_ts = int(today_start_utc.timestamp())
     
     # Get today's news with related_stocks filtered by market
     news_items = session.query(HKStockLive.related_stocks)\
