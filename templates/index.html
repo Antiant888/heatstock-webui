@@ -144,8 +144,11 @@ const topStocksList = document.getElementById('top-stocks-list');
 if (top3Stocks && top3Stocks.length > 0) {
     topStocksList.innerHTML = top3Stocks.map(stock => `
         <div class="flex justify-between items-center">
-            <span class="text-sm font-medium text-gray-900">${stock.code}</span>
-            <span class="text-xs text-gray-500">${stock.frequency}</span>
+            <div class="flex-1 min-w-0">
+                <span class="text-sm font-medium text-gray-900">${stock.code}</span>
+                <span class="text-xs text-gray-500 ml-1 truncate">${stock.name ? '(' + stock.name + ')' : ''}</span>
+            </div>
+            <span class="text-xs text-gray-500 ml-2">${stock.frequency}</span>
         </div>
     `).join('');
 } else {
@@ -242,7 +245,7 @@ if (stocksCanvas) {
     new Chart(stocksCanvas, {
         type: 'bar',
         data: {
-            labels: stockFrequency.map(s => s.code),
+            labels: stockFrequency.map(s => s.name ? `${s.code} (${s.name})` : s.code),
             datasets: [{
                 label: 'Mentions',
                 data: stockFrequency.map(s => s.frequency),
@@ -360,8 +363,8 @@ function updateStocksChart() {
         combinedData = combinedData.slice(0, 10);
     }
     
-    // Update chart
-    stocksChart.data.labels = combinedData.map(s => s.code);
+    // Update chart with code and name
+    stocksChart.data.labels = combinedData.map(s => s.name ? `${s.code} (${s.name})` : s.code);
     stocksChart.data.datasets[0].data = combinedData.map(s => s.frequency);
     stocksChart.update();
 }
@@ -380,7 +383,7 @@ function initializeStocksChart() {
     stocksChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: stockFrequency.map(s => s.code),
+            labels: stockFrequency.map(s => s.name ? `${s.code} (${s.name})` : s.code),
             datasets: [{
                 label: 'Mentions',
                 data: stockFrequency.map(s => s.frequency),
