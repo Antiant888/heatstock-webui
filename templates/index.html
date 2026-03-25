@@ -338,7 +338,6 @@ window.addEventListener('themeChanged', function() {
 
 // Market Filter Functionality
 let selectedMarkets = new Set();
-let stocksChart = null;
 let activeFilter = { type: null, value: null };
 let currentStockData = stockFrequency; // Track currently displayed stock data
 
@@ -380,7 +379,7 @@ function initializeMarketCheckboxes() {
 
 // Update stocks chart based on selected markets
 function updateStocksChart() {
-    if (!stocksChart) return;
+    if (!stocksChartInstance) return;
     
     // Use market-specific data directly from backend
     let combinedData = [];
@@ -412,45 +411,11 @@ function updateStocksChart() {
     currentStockData = combinedData;
     
     // Update chart with code and name
-    stocksChart.data.labels = combinedData.map(s => s.name ? `${s.code} (${s.name})` : s.code);
-    stocksChart.data.datasets[0].data = combinedData.map(s => s.frequency);
-    stocksChart.update();
+    stocksChartInstance.data.labels = combinedData.map(s => s.name ? `${s.code} (${s.name})` : s.code);
+    stocksChartInstance.data.datasets[0].data = combinedData.map(s => s.frequency);
+    stocksChartInstance.update();
 }
 
-// Initialize the stocks chart
-function initializeStocksChart() {
-    const ctx = document.getElementById('stocksChart');
-    if (!ctx) return;
-    
-    // Check if chart already exists and destroy it
-    const existingChart = Chart.getChart(ctx);
-    if (existingChart) {
-        existingChart.destroy();
-    }
-    
-    stocksChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: stockFrequency.map(s => s.name ? `${s.code} (${s.name})` : s.code),
-            datasets: [{
-                label: 'Mentions',
-                data: stockFrequency.map(s => s.frequency),
-                backgroundColor: 'rgba(59, 130, 246, 0.5)'
-            }]
-        },
-        options: {
-            responsive: true,
-            indexAxis: 'y',
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    const stockCode = currentStockData[index].code;
-                    filterByStock(stockCode);
-                }
-            }
-        }
-    });
-}
 
 // Filter Recent News based on active filter
 async function filterRecentNews() {
@@ -593,7 +558,7 @@ function clearFilter() {
 
 // Highlight selected bar in chart
 function highlightSelectedBar(type, value) {
-    const chart = type === 'stock' ? stocksChart : infosChartInstance;
+    const chart = type === 'stock' ? stocksChartInstance : infosChartInstance;
     if (!chart) return;
     
     const labels = chart.data.labels;
@@ -601,12 +566,12 @@ function highlightSelectedBar(type, value) {
     const index = labels.findIndex(label => label === value || label.startsWith(value + ' '));
     
     if (index !== -1) {
-        const colors = chart.data.datasets[0].backgroundColor;
+        const colors = window.getChartColors();
         const newColors = labels.map((_, i) => {
             if (i === index) {
-                return type === 'stock' ? 'rgba(59, 130, 246, 1)' : 'rgba(16, 185, 129, 1)';
+                return type === 'stock' ? colors.stocksBorder : colors.infosBorder;
             }
-            return type === 'stock' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(16, 185, 129, 0.3)';
+            return type === 'stock' ? colors.stocks : colors.infos;
         });
         chart.data.datasets[0].backgroundColor = newColors;
         chart.update();
@@ -615,19 +580,19 @@ function highlightSelectedBar(type, value) {
 
 // Reset bar highlights
 function resetBarHighlights() {
-    if (stocksChart) {
-        stocksChart.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.5)';
-        stocksChart.update();
+    const colors = window.getChartColors();
+    if (stocksChartInstance) {
+        stocksChartInstance.data.datasets[0].backgroundColor = colors.stocks;
+        stocksChartInstance.update();
     }
     if (infosChartInstance) {
-        infosChartInstance.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+        infosChartInstance.data.datasets[0].backgroundColor = colors.infos;
         infosChartInstance.update();
     }
 }
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    initializeStocksChart();
     initializeMarketCheckboxes();
     renderNewsList(); // Render initial news with expand/collapse functionality
 });
