@@ -129,7 +129,7 @@ async def dashboard(request: Request):
             recent_news_data.append({
                 'id': news.id,
                 'title': news.title or 'Untitled',
-                'content': (news.content[:100] + '...') if news.content and len(news.content) > 100 else (news.content or ''),
+                'content': news.content or '',
                 'timestamp': timestamp_to_hkt(news.create_timestamp),
                 'create_timestamp': news.create_timestamp,
                 'stocks': extract_stock_codes(news.related_stocks),
@@ -443,7 +443,7 @@ async def api_news_today(
             items.append({
                 'id': news.id,
                 'title': news.title or 'Untitled',
-                'content': (news.content[:100] + '...') if news.content and len(news.content) > 100 else (news.content or ''),
+                'content': news.content or '',
                 'timestamp': timestamp_to_hkt(news.create_timestamp),
                 'create_timestamp': news.create_timestamp,
                 'stocks': extract_stock_codes(news.related_stocks),
