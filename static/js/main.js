@@ -1,7 +1,47 @@
 // Main JavaScript for HK Stock News Dashboard
 
+// Theme Toggle Functionality
+function initTheme() {
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const lightIcon = document.getElementById('theme-toggle-light-icon');
+    const darkIcon = document.getElementById('theme-toggle-dark-icon');
+    
+    // Check for saved theme preference or default to light
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+        if (lightIcon) lightIcon.classList.remove('hidden');
+        if (darkIcon) darkIcon.classList.add('hidden');
+    } else {
+        document.documentElement.classList.remove('dark');
+        if (lightIcon) lightIcon.classList.add('hidden');
+        if (darkIcon) darkIcon.classList.remove('hidden');
+    }
+    
+    // Toggle theme on button click
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            
+            if (document.documentElement.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                if (lightIcon) lightIcon.classList.remove('hidden');
+                if (darkIcon) darkIcon.classList.add('hidden');
+            } else {
+                localStorage.setItem('theme', 'light');
+                if (lightIcon) lightIcon.classList.add('hidden');
+                if (darkIcon) darkIcon.classList.remove('hidden');
+            }
+        });
+    }
+}
+
 // Mobile menu toggle
 document.addEventListener('DOMContentLoaded', function() {
+    initTheme();
+    
     const mobileMenuButton = document.querySelector('.mobile-menu-button');
     const mobileMenu = document.querySelector('.mobile-menu');
 

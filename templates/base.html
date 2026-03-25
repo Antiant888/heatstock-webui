@@ -5,37 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HK Stock News Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-300">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
+    <nav class="bg-white dark:bg-gray-800 shadow-lg transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between">
                 <div class="flex space-x-7">
                     <div class="flex items-center py-4">
-                        <span class="font-semibold text-gray-700 text-lg">HK Stock News Dashboard</span>
+                        <span class="font-semibold text-gray-700 dark:text-gray-200 text-lg">HK Stock News Dashboard</span>
                     </div>
                     <div class="hidden md:flex items-center space-x-1">
-                        <a href="/" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'dashboard' %}text-green-500 border-b-2 border-green-500{% endif %}">Dashboard</a>
-                        <a href="/news" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'news' %}text-green-500 border-b-2 border-green-500{% endif %}">News Feed</a>
-                        <a href="/stocks" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'stocks' %}text-green-500 border-b-2 border-green-500{% endif %}">Stock Frequency</a>
-                        <a href="/infos" class="py-4 px-2 text-gray-500 hover:text-green-500 transition duration-300 {% if active_page == 'infos' %}text-green-500 border-b-2 border-green-500{% endif %}">Info Frequency</a>
+                        <a href="/" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'dashboard' %}text-green-500 border-b-2 border-green-500{% endif %}">Dashboard</a>
+                        <a href="/news" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'news' %}text-green-500 border-b-2 border-green-500{% endif %}">News Feed</a>
+                        <a href="/stocks" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'stocks' %}text-green-500 border-b-2 border-green-500{% endif %}">Stock Frequency</a>
+                        <a href="/infos" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'infos' %}text-green-500 border-b-2 border-green-500{% endif %}">Info Frequency</a>
                     </div>
                 </div>
-                <!-- Mobile menu button -->
-                <div class="md:hidden flex items-center">
-                    <button class="outline-none mobile-menu-button">
-                        <svg class="w-6 h-6 text-gray-500 hover:text-green-500" x-show="!showMenu" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
-                            <path d="M4 6h16M4 12h16M4 18h16"></path>
+                <div class="flex items-center space-x-4">
+                    <!-- Theme Toggle Button -->
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300" title="Toggle theme">
+                        <svg id="theme-toggle-light-icon" class="w-5 h-5 text-gray-700 dark:text-gray-300 hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <svg id="theme-toggle-dark-icon" class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
                         </svg>
                     </button>
+                    <!-- Mobile menu button -->
+                    <div class="md:hidden flex items-center">
+                        <button class="outline-none mobile-menu-button">
+                            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400 hover:text-green-500" x-show="!showMenu" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         <!-- Mobile menu -->
-        <div class="hidden mobile-menu">
+        <div class="hidden mobile-menu dark:bg-gray-800">
             <ul class="">
                 <li><a href="/" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Dashboard</a></li>
                 <li><a href="/news" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">News Feed</a></li>
@@ -51,9 +67,9 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white shadow-lg mt-8">
+    <footer class="bg-white dark:bg-gray-800 shadow-lg mt-8 transition-colors duration-300">
         <div class="max-w-7xl mx-auto py-4 px-4">
-            <p class="text-center text-gray-500 text-sm">HK Stock News Dashboard - Data from Gelonghui</p>
+            <p class="text-center text-gray-500 dark:text-gray-400 text-sm">HK Stock News Dashboard - Data from Gelonghui</p>
         </div>
     </footer>
 
