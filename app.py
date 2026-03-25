@@ -454,6 +454,77 @@ async def api_news_today(
     finally:
         session.close()
 
+@app.get("/api/dashboard/refresh")
+async def api_dashboard_refresh():
+    """Get fresh dashboard data for manual refresh"""
+    session = get_session(engine)
+    try:
+        # Get total news count
+        total_count = session.query(HKStockLive).count()
+        
+        # Get today's news count (using HKT timezone)
+        from datetime import timezone as tz
+        hkt_timezone = tz(timedelta(hours=8))
+        today_start_hkt = datetime.now(hkt_timezone).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_utc = today_start_hkt.astimezone(timezone.utc)
+        today_start_ts = int(today_start_utc.timestamp())
+        today_count = session.query(HKStockLive)\
+            .filter(HKStockLive.create_timestamp >= today_start_ts)\
+            .count()
+        
+        # Get top 10 stocks for chart (today only)
+        stock_frequency = get_stock_frequency_today(session, limit=10)
+        
+        # Get top 3 stocks for stats card (today only)
+        top_3_stocks = get_stock_frequency_today(session, limit=3)
+        
+        # Get available markets for filtering
+        available_markets = get_available_markets(session)
+        
+        # Get stock frequency by market for each available market (today only)
+        market_stock_data = {}
+        for market in available_markets:
+            market_stock_data[market] = get_stock_frequency_today_by_market(session, market, limit=10)
+        
+        # Get top 10 info categories for chart (today only)
+        info_frequency = get_info_frequency_today(session, limit=10)
+        
+        # Get top 3 info categories for stats card (today only)
+        top_3_infos = get_info_frequency_today(session, limit=3)
+        
+        # Get today's news (up to 50 items)
+        recent_news = session.query(HKStockLive)\
+            .filter(HKStockLive.create_timestamp >= today_start_ts)\
+            .order_by(desc(HKStockLive.create_timestamp))\
+            .limit(50)\
+            .all()
+        
+        recent_news_data = []
+        for news in recent_news:
+            recent_news_data.append({
+                'id': news.id,
+                'title': news.title or 'Untitled',
+                'content': news.content or '',
+                'timestamp': timestamp_to_hkt(news.create_timestamp),
+                'create_timestamp': news.create_timestamp,
+                'stocks': extract_stock_codes(news.related_stocks),
+                'infos': extract_info_names(news.related_infos)
+            })
+        
+        return {
+            'total_count': total_count,
+            'today_count': today_count,
+            'stock_frequency': stock_frequency,
+            'top_3_stocks': top_3_stocks,
+            'available_markets': available_markets,
+            'market_stock_data': market_stock_data,
+            'info_frequency': info_frequency,
+            'top_3_infos': top_3_infos,
+            'recent_news': recent_news_data
+        }
+    finally:
+        session.close()
+
 # ────────────────────────────────────────────────
 # Helper Functions
 # ────────────────────────────────────────────────

@@ -2,6 +2,11 @@
 
 {% block content %}
 <div class="space-y-6">
+    <!-- Update Notification Badge -->
+    <div id="update-badge" class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-full text-sm shadow-lg z-50 animate-pulse">
+        🔄 New data available
+    </div>
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <!-- Card 1: Total News Today -->
@@ -61,8 +66,14 @@
 
     <!-- Recent News -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white">Recent News</h3>
+            <button id="refresh-btn" onclick="manualRefresh()" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                <svg id="refresh-icon" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh
+            </button>
         </div>
         <ul class="divide-y divide-gray-200 dark:divide-gray-700" id="recent-news-list">
             <!-- Populated by JavaScript -->
@@ -601,6 +612,118 @@ function resetBarHighlights() {
         infosChartInstance.data.datasets[0].backgroundColor = colors.infos;
         infosChartInstance.update();
     }
+}
+
+// Manual refresh function
+async function manualRefresh() {
+    const refreshBtn = document.getElementById('refresh-btn');
+    const refreshIcon = document.getElementById('refresh-icon');
+    
+    // Show loading state
+    refreshBtn.disabled = true;
+    refreshIcon.classList.add('animate-spin');
+    refreshBtn.innerHTML = `
+        <svg class="w-4 h-4 mr-1.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refreshing...
+    `;
+    
+    try {
+        const response = await fetch('/api/dashboard/refresh');
+        if (!response.ok) {
+            throw new Error('Refresh failed');
+        }
+        
+        const data = await response.json();
+        
+        // Update all dashboard data
+        stockFrequency = data.stock_frequency || [];
+        infoFrequency = data.info_frequency || [];
+        top3Stocks = data.top_3_stocks || [];
+        top3Infos = data.top_3_infos || [];
+        recentNews = data.recent_news || [];
+        availableMarkets = data.available_markets || [];
+        marketStockData = data.market_stock_data || {};
+        
+        // Update current news data
+        currentNewsData = recentNews;
+        
+        // Re-render all components
+        updateTop3Stocks();
+        updateTop3Infos();
+        initializeCharts();
+        initializeMarketCheckboxes();
+        renderNewsList();
+        
+        // Update relative time
+        if (recentNews && recentNews.length > 0 && recentNews[0].create_timestamp) {
+            updateRelativeTime(recentNews[0].create_timestamp);
+        }
+        
+        // Show success notification
+        showUpdateNotification('Dashboard refreshed successfully!');
+        
+    } catch (error) {
+        console.error('Refresh error:', error);
+        showUpdateNotification('Refresh failed. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        refreshBtn.disabled = false;
+        refreshIcon.classList.remove('animate-spin');
+        refreshBtn.innerHTML = `
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+        `;
+    }
+}
+
+// Update Top 3 Stocks display
+function updateTop3Stocks() {
+    const topStocksList = document.getElementById('top-stocks-list');
+    if (top3Stocks && top3Stocks.length > 0) {
+        topStocksList.innerHTML = top3Stocks.map(stock => `
+            <div class="flex justify-between items-center">
+                <div class="flex-1 min-w-0">
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">${stock.code}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-1 truncate">${stock.name ? '(' + stock.name + ')' : ''}</span>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">${stock.frequency}</span>
+            </div>
+        `).join('');
+    } else {
+        topStocksList.innerHTML = '<div class="text-sm text-gray-400 dark:text-gray-500">N/A</div>';
+    }
+}
+
+// Update Top 3 Infos display
+function updateTop3Infos() {
+    const topInfosList = document.getElementById('top-infos-list');
+    if (top3Infos && top3Infos.length > 0) {
+        topInfosList.innerHTML = top3Infos.map(info => `
+            <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-900 dark:text-white truncate">${info.name}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">${info.frequency}</span>
+            </div>
+        `).join('');
+    } else {
+        topInfosList.innerHTML = '<div class="text-sm text-gray-400 dark:text-gray-500">N/A</div>';
+    }
+}
+
+// Show update notification
+function showUpdateNotification(message, type = 'success') {
+    const badge = document.getElementById('update-badge');
+    badge.textContent = type === 'success' ? `✅ ${message}` : `❌ ${message}`;
+    badge.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
+    badge.classList.add(type === 'success' ? 'bg-green-500' : 'bg-red-500');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        badge.classList.add('hidden');
+    }, 3000);
 }
 
 // Initialize everything when DOM is loaded
