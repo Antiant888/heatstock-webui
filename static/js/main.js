@@ -6,18 +6,19 @@ function initTheme() {
     const lightIcon = document.getElementById('theme-toggle-light-icon');
     const darkIcon = document.getElementById('theme-toggle-dark-icon');
     
-    // Check for saved theme preference or default to light
+    // Check for saved theme preference or default to dark
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        document.documentElement.classList.add('dark');
-        if (lightIcon) lightIcon.classList.remove('hidden');
-        if (darkIcon) darkIcon.classList.add('hidden');
-    } else {
+    if (savedTheme === 'light') {
         document.documentElement.classList.remove('dark');
         if (lightIcon) lightIcon.classList.add('hidden');
         if (darkIcon) darkIcon.classList.remove('hidden');
+    } else {
+        // Default to dark mode (savedTheme === 'dark' || !savedTheme)
+        document.documentElement.classList.add('dark');
+        if (lightIcon) lightIcon.classList.remove('hidden');
+        if (darkIcon) darkIcon.classList.add('hidden');
     }
     
     // Toggle theme on button click
