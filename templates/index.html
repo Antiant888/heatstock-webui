@@ -213,104 +213,109 @@ setInterval(() => {
     }
 }, 60000);
 
-// Stocks Chart - with error handling for canvas reuse
-const stocksCanvas = document.getElementById('stocksChart');
+// Chart instances
 let stocksChartInstance = null;
-if (stocksCanvas) {
-    // Check if chart already exists on this canvas
-    const existingChart = Chart.getChart(stocksCanvas);
-    if (existingChart) {
-        existingChart.destroy();
-    }
-    
-    const colors = window.getChartColors();
-    stocksChartInstance = new Chart(stocksCanvas, {
-        type: 'bar',
-        data: {
-            labels: stockFrequency.map(s => s.name ? `${s.code} (${s.name})` : s.code),
-            datasets: [{
-                label: 'Mentions',
-                data: stockFrequency.map(s => s.frequency),
-                backgroundColor: colors.stocks,
-                borderColor: colors.stocksBorder,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            indexAxis: 'y',
-            scales: {
-                x: {
-                    ticks: { color: colors.text },
-                    grid: { color: colors.grid }
-                },
-                y: {
-                    ticks: { color: colors.text },
-                    grid: { color: colors.grid }
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: { color: colors.text }
-                }
-            }
-        }
-    });
-}
-
-// Infos Chart
 let infosChartInstance = null;
-const infosCanvas = document.getElementById('infosChart');
-if (infosCanvas) {
-    const existingInfosChart = Chart.getChart(infosCanvas);
-    if (existingInfosChart) {
-        existingInfosChart.destroy();
-    }
-    
-    const colors = window.getChartColors();
-    infosChartInstance = new Chart(infosCanvas, {
-        type: 'bar',
-        data: {
-            labels: infoFrequency.map(i => i.name),
-            datasets: [{
-                label: 'Mentions',
-                data: infoFrequency.map(i => i.frequency),
-                backgroundColor: colors.infos,
-                borderColor: colors.infosBorder,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            indexAxis: 'y',
-            scales: {
-                x: {
-                    ticks: { color: colors.text },
-                    grid: { color: colors.grid }
+
+// Initialize charts
+function initializeCharts() {
+    // Stocks Chart
+    const stocksCanvas = document.getElementById('stocksChart');
+    if (stocksCanvas) {
+        // Check if chart already exists on this canvas
+        const existingChart = Chart.getChart(stocksCanvas);
+        if (existingChart) {
+            existingChart.destroy();
+        }
+        
+        const colors = window.getChartColors();
+        stocksChartInstance = new Chart(stocksCanvas, {
+            type: 'bar',
+            data: {
+                labels: stockFrequency.map(s => s.name ? `${s.code} (${s.name})` : s.code),
+                datasets: [{
+                    label: 'Mentions',
+                    data: stockFrequency.map(s => s.frequency),
+                    backgroundColor: colors.stocks,
+                    borderColor: colors.stocksBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    },
+                    y: {
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    }
                 },
-                y: {
-                    ticks: { color: colors.text },
-                    grid: { color: colors.grid }
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: { color: colors.text }
-                }
-            },
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    const infoName = infoFrequency[index].name;
-                    filterByInfo(infoName);
+                plugins: {
+                    legend: {
+                        labels: { color: colors.text }
+                    }
                 }
             }
+        });
+    }
+
+    // Infos Chart
+    const infosCanvas = document.getElementById('infosChart');
+    if (infosCanvas) {
+        const existingInfosChart = Chart.getChart(infosCanvas);
+        if (existingInfosChart) {
+            existingInfosChart.destroy();
         }
-    });
+        
+        const colors = window.getChartColors();
+        infosChartInstance = new Chart(infosCanvas, {
+            type: 'bar',
+            data: {
+                labels: infoFrequency.map(i => i.name),
+                datasets: [{
+                    label: 'Mentions',
+                    data: infoFrequency.map(i => i.frequency),
+                    backgroundColor: colors.infos,
+                    borderColor: colors.infosBorder,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    },
+                    y: {
+                        ticks: { color: colors.text },
+                        grid: { color: colors.grid }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: colors.text }
+                    }
+                },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const infoName = infoFrequency[index].name;
+                        filterByInfo(infoName);
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Update chart colors when theme changes
-window.addEventListener('themeChanged', function() {
+function updateChartColors() {
     const colors = window.getChartColors();
     
     if (stocksChartInstance) {
@@ -334,7 +339,7 @@ window.addEventListener('themeChanged', function() {
         infosChartInstance.options.plugins.legend.labels.color = colors.text;
         infosChartInstance.update();
     }
-});
+}
 
 // Market Filter Functionality
 let selectedMarkets = new Set();
@@ -593,6 +598,12 @@ function resetBarHighlights() {
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts (main.js is now loaded)
+    initializeCharts();
+    
+    // Listen for theme changes
+    window.addEventListener('themeChanged', updateChartColors);
+    
     initializeMarketCheckboxes();
     renderNewsList(); // Render initial news with expand/collapse functionality
 });
