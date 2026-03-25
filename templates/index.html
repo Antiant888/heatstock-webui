@@ -474,7 +474,7 @@ function renderNewsList(newsData = recentNews) {
                             <p class="text-sm font-medium text-gray-900 truncate">${news.title}</p>
                             <p class="text-sm text-gray-500 ${isExpanded ? '' : 'truncate'}">${displayContent}</p>
                             ${shouldTruncate ? `
-                                <button onclick="toggleNewsExpand(${news.id})" class="mt-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
+                                <button onclick="toggleNewsExpand('${news.id}')" class="mt-1 text-xs text-blue-600 hover:text-blue-800 font-medium">
                                     ${isExpanded ? 'Show Less' : 'Read More'}
                                 </button>
                             ` : ''}
