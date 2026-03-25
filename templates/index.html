@@ -124,6 +124,9 @@ try {
     recentNews = [];
 }
 
+// Update currentNewsData to point to the parsed recentNews array
+currentNewsData = recentNews;
+
 try {
     // Safely parse availableMarkets JSON - handle control characters
     let marketsJson = '{{ available_markets_json|safe }}';
