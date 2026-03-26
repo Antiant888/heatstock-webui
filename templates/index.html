@@ -524,7 +524,7 @@ function renderNewsList(newsData = recentNews) {
             
             return `
                 <li class="px-6 py-4">
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${news.title}</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400 ${isExpanded ? '' : 'truncate'}">${displayContent}</p>
@@ -538,7 +538,7 @@ function renderNewsList(newsData = recentNews) {
                                 ${news.infos.map(info => `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800" onclick="filterByInfo('${info}')">${info}</span>`).join('')}
                             </div>
                         </div>
-                        <div class="ml-4 flex-shrink-0 text-sm text-gray-500 dark:text-gray-400">
+                        <div class="mt-2 sm:mt-0 sm:ml-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
                             ${news.timestamp}
                         </div>
                     </div>
