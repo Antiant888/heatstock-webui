@@ -126,7 +126,7 @@ try {
 
 try {
     // Safely parse recentNews JSON - handle control characters
-    let recentNewsJson = '{{ recent_news_json|safe }}';
+    let recentNewsJson = '{{ recent_news_json }}';
     // Escape control characters that might break JSON parsing
     recentNewsJson = recentNewsJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     recentNews = recentNewsJson ? JSON.parse(recentNewsJson) : [];
@@ -140,7 +140,7 @@ currentNewsData = recentNews;
 
 try {
     // Safely parse availableMarkets JSON - handle control characters
-    let marketsJson = '{{ available_markets_json|safe }}';
+    let marketsJson = '{{ available_markets_json }}';
     // Escape control characters that might break JSON parsing
     marketsJson = marketsJson.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t');
     availableMarkets = marketsJson ? JSON.parse(marketsJson) : [];

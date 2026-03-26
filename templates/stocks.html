@@ -47,10 +47,10 @@
 
 <script>
 // Data from backend
-const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
-const availableMarkets = JSON.parse('{{ available_markets_json|safe }}');
-const marketStockData = JSON.parse('{{ market_stock_data_json|safe }}');
-const allTimeNews = JSON.parse('{{ all_time_news_json|safe }}');
+const stockFrequency = JSON.parse('{{ stock_frequency_json }}');
+const availableMarkets = JSON.parse('{{ available_markets_json }}');
+const marketStockData = JSON.parse('{{ market_stock_data_json }}');
+const allTimeNews = JSON.parse('{{ all_time_news_json }}');
 
 // Default markets (HK and US)
 let selectedMarkets = new Set(['HK', 'US'].filter(m => availableMarkets.includes(m)));
