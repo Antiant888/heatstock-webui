@@ -169,10 +169,11 @@ async def news_page(request: Request):
 
 @app.get("/stocks", response_class=HTMLResponse)
 async def stocks_page(request: Request):
-    """Stock frequency analysis page"""
+    """Stock frequency analysis page - today's news only"""
     session = get_session(engine)
     try:
-        stock_frequency = get_stock_frequency(session, limit=50)
+        # Get today's stock frequency only
+        stock_frequency = get_stock_frequency_today(session, limit=50)
         context = {
             "stock_frequency_json": json.dumps(stock_frequency)
         }

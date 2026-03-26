@@ -2,32 +2,11 @@
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Stock Frequency Chart -->
+    <!-- Stock Frequency Cloud -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Stock Code Frequency (Top 50)</h3>
-        <canvas id="stockChart" height="400"></canvas>
-    </div>
-
-    <!-- Stock Frequency Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Stock Frequency Table</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Rank</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Stock Code</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Stock Name</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Frequency</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="stockTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    <!-- Table rows will be populated by JavaScript -->
-                </tbody>
-            </table>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Stock Frequency (Today's News)</h3>
+        <div id="stockCloud" class="flex flex-wrap gap-3">
+            <!-- Hashtags will be populated by JavaScript -->
         </div>
     </div>
 </div>
@@ -36,69 +15,30 @@
 // Stock frequency data from backend
 const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
 
-// Render chart with theme-aware colors
-const colors = window.getChartColors();
-const stockChart = new Chart(document.getElementById('stockChart'), {
-    type: 'bar',
-    data: {
-        labels: stockFrequency.map(s => s.code),
-        datasets: [{
-            label: 'Mentions',
-            data: stockFrequency.map(s => s.frequency),
-            backgroundColor: colors.stocks,
-            borderColor: colors.stocksBorder,
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        indexAxis: 'y',
-        scales: {
-            x: { 
-                beginAtZero: true,
-                ticks: { color: colors.text },
-                grid: { color: colors.grid }
-            },
-            y: {
-                ticks: { color: colors.text },
-                grid: { color: colors.grid }
-            }
-        },
-        plugins: {
-            legend: { 
-                display: false,
-                labels: { color: colors.text }
-            }
-        }
+// Render hashtag cloud
+function renderStockCloud() {
+    const cloudContainer = document.getElementById('stockCloud');
+    
+    if (!stockFrequency || stockFrequency.length === 0) {
+        cloudContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No stock data available for today</p>';
+        return;
     }
-});
+    
+    cloudContainer.innerHTML = stockFrequency.map(stock => `
+        <a href="/news?stock=${stock.code}" 
+           class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium 
+                  bg-gray-100 dark:bg-gray-700 
+                  text-gray-800 dark:text-gray-200 
+                  hover:bg-green-100 dark:hover:bg-green-900 
+                  hover:text-green-800 dark:hover:text-green-200
+                  transition-all duration-200 
+                  hover:scale-105 hover:shadow-md">
+            ${stock.code} ${stock.name} (${stock.frequency})
+        </a>
+    `).join('');
+}
 
-// Update chart colors when theme changes
-window.addEventListener('themeChanged', function() {
-    const newColors = window.getChartColors();
-    stockChart.data.datasets[0].backgroundColor = newColors.stocks;
-    stockChart.data.datasets[0].borderColor = newColors.stocksBorder;
-    stockChart.options.scales.x.ticks.color = newColors.text;
-    stockChart.options.scales.y.ticks.color = newColors.text;
-    stockChart.options.scales.x.grid.color = newColors.grid;
-    stockChart.options.scales.y.grid.color = newColors.grid;
-    stockChart.update();
-});
-
-// Render table
-const tableBody = document.getElementById('stockTableBody');
-stockFrequency.forEach((stock, index) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${index + 1}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${stock.code}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${stock.name}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${stock.frequency}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm">
-            <a href="/news?stock=${stock.code}" class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300">View News</a>
-        </td>
-    `;
-    tableBody.appendChild(row);
-});
+// Initial render
+renderStockCloud();
 </script>
 {% endblock %}
