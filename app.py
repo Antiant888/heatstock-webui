@@ -204,8 +204,7 @@ async def stocks_page(request: Request):
         context = {
             "stock_frequency_json": json.dumps(stock_frequency),
             "available_markets_json": json.dumps(available_markets),
-            "market_stock_data_json": json.dumps(market_stock_data),
-            "all_time_news_json": json.dumps(all_time_news_data)
+            "market_stock_data_json": json.dumps(market_stock_data)
         }
         
         # Manually render template to bypass TemplateResponse issues
