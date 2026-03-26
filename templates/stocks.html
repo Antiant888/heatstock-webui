@@ -28,6 +28,17 @@ const marketStockData = JSON.parse('{{ market_stock_data_json|safe }}');
 // Default markets (HK and US)
 let selectedMarkets = new Set(['HK', 'US'].filter(m => availableMarkets.includes(m)));
 
+// Get color based on market (Option A: Low Opacity)
+function getMarketColor(market) {
+    const colors = {
+        'HK': 'bg-red-500/20 dark:bg-red-500/30 text-red-700 dark:text-red-300',
+        'US': 'bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300',
+        'CN': 'bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-300',
+        'default': 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+    };
+    return colors[market] || colors['default'];
+}
+
 // Initialize market checkboxes
 function initializeMarketCheckboxes() {
     const container = document.getElementById('marketCheckboxes');
@@ -90,10 +101,8 @@ function updateStockCloud() {
     cloudContainer.innerHTML = top50Stocks.map(stock => `
         <a href="/news?stock=${stock.code}" 
            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
-                  bg-gray-100 dark:bg-gray-700 
-                  text-gray-800 dark:text-gray-200 
-                  hover:bg-green-100 dark:hover:bg-green-900 
-                  hover:text-green-800 dark:hover:text-green-200
+                  ${getMarketColor(stock.market)}
+                  hover:opacity-80
                   transition-all duration-200 
                   hover:scale-105 hover:shadow-md">
             ${stock.code} ${stock.name} (${stock.frequency})
