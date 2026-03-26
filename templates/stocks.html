@@ -23,7 +23,7 @@
         <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Filters</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
                     <input type="text" id="searchInput" placeholder="Search title or content..." 
@@ -32,16 +32,6 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Stock Code</label>
                     <input type="text" id="stockFilter" placeholder="e.g., 09698" 
-                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date From</label>
-                    <input type="date" id="dateFrom" 
-                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date To</label>
-                    <input type="date" id="dateTo" 
                         class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
                 </div>
             </div>
@@ -210,8 +200,6 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadNews() {
     const search = document.getElementById('searchInput').value;
     const stock = document.getElementById('stockFilter').value;
-    const dateFrom = document.getElementById('dateFrom').value;
-    const dateTo = document.getElementById('dateTo').value;
 
     const params = new URLSearchParams({
         page: currentPage,
@@ -220,8 +208,6 @@ async function loadNews() {
 
     if (search) params.append('search', search);
     if (stock) params.append('stock', stock);
-    if (dateFrom) params.append('date_from', dateFrom);
-    if (dateTo) params.append('date_to', dateTo);
 
     try {
         const response = await fetch(`/api/news?${params}`);
@@ -308,8 +294,6 @@ function applyFilters() {
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('stockFilter').value = '';
-    document.getElementById('dateFrom').value = '';
-    document.getElementById('dateTo').value = '';
     currentPage = 1;
     loadNews();
 }
