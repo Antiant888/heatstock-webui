@@ -189,6 +189,8 @@ function updateStockCloud() {
 // News Feed Variables
 let currentPage = 1;
 const pageSize = 20;
+let expandedNewsId = null; // Track which news is currently expanded
+let currentNewsData = []; // Track current news data
 
 // Load news on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -213,6 +215,8 @@ async function loadNews() {
         const response = await fetch(`/api/news?${params}`);
         const data = await response.json();
         
+        // Store current news data for expand/collapse functionality
+        currentNewsData = data.items;
         renderNews(data.items);
         updatePagination(data);
     } catch (error) {
@@ -230,12 +234,18 @@ function renderNews(items) {
     }
 
     items.forEach(item => {
+        const isExpanded = expandedNewsId === item.id;
+        const shouldTruncate = item.content && item.content.length > 100;
+        const displayContent = isExpanded || !shouldTruncate 
+            ? item.content 
+            : (item.content || '').substring(0, 100) + '...';
+
         const stocksHtml = item.stocks.map(s => 
-            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">${s}</span>`
+            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800" onclick="filterByStock('${s}')">${s}</span>`
         ).join('');
 
         const infosHtml = item.infos.map(i => 
-            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">${i}</span>`
+            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 cursor-pointer hover:bg-green-200 dark:hover:bg-green-800" onclick="filterByInfo('${i}')">${i}</span>`
         ).join('');
 
         const html = `
@@ -243,7 +253,12 @@ function renderNews(items) {
                 <div class="flex items-start justify-between">
                     <div class="flex-1 min-w-0">
                         <h4 class="text-sm font-medium text-gray-900 dark:text-white">${item.title || 'Untitled'}</h4>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${item.content || ''}</p>
+                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 ${isExpanded ? '' : 'line-clamp-2'}">${displayContent}</p>
+                        ${shouldTruncate ? `
+                            <button onclick="toggleNewsExpand('${item.id}')" class="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">
+                                ${isExpanded ? 'Show Less' : 'Read More'}
+                            </button>
+                        ` : ''}
                         <div class="mt-2 flex flex-wrap gap-1">
                             ${stocksHtml}
                             ${infosHtml}
@@ -298,10 +313,35 @@ function clearFilters() {
     loadNews();
 }
 
+// Toggle news expand (accordion-style - only one expanded at a time)
+function toggleNewsExpand(newsId) {
+    if (expandedNewsId === newsId) {
+        // Clicking same item - collapse it
+        expandedNewsId = null;
+    } else {
+        // Clicking different item - expand new one (old one collapses automatically)
+        expandedNewsId = newsId;
+    }
+    // Re-render the news list with current news data
+    renderNews(currentNewsData);
+}
+
 // Filter by stock code (called when clicking stock in hashtag cloud)
 function filterByStock(stockCode) {
     document.getElementById('stockFilter').value = stockCode;
     currentPage = 1;
+    expandedNewsId = null; // Reset expanded state when filtering
+    loadNews();
+    
+    // Scroll to news feed section
+    document.querySelector('#newsContainer').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Filter by info category (called when clicking info tag)
+function filterByInfo(infoName) {
+    document.getElementById('searchInput').value = infoName;
+    currentPage = 1;
+    expandedNewsId = null; // Reset expanded state when filtering
     loadNews();
     
     // Scroll to news feed section
