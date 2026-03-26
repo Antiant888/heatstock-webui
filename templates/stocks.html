@@ -16,13 +16,72 @@
         <div id="stockCloud" class="flex flex-wrap gap-3">
             <!-- Hashtags will be populated by JavaScript -->
         </div>
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <a href="/news" class="inline-flex items-center text-sm text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium">
-                View all news on News Feed page
-                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                </svg>
-            </a>
+    </div>
+
+    <!-- News Feed Section -->
+    <div class="space-y-6">
+        <!-- Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Filters</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                    <input type="text" id="searchInput" placeholder="Search title or content..." 
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Stock Code</label>
+                    <input type="text" id="stockFilter" placeholder="e.g., 09698" 
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date From</label>
+                    <input type="date" id="dateFrom" 
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date To</label>
+                    <input type="date" id="dateTo" 
+                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button onclick="applyFilters()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Apply Filters
+                </button>
+                <button onclick="clearFilters()" class="ml-2 inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- News List -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">News Feed</h3>
+                <span id="totalCount" class="text-sm text-gray-500 dark:text-gray-400"></span>
+            </div>
+            <div id="newsContainer" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <!-- News items will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow px-6 py-4 transition-colors duration-300">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalItems">0</span> results
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="previousPage()" id="prevBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Previous
+                    </button>
+                    <span id="pageInfo" class="inline-flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300"></span>
+                    <button onclick="nextPage()" id="nextBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -125,7 +184,8 @@ function updateStockCloud() {
     }
     
     cloudContainer.innerHTML = top50Stocks.map(stock => `
-        <a href="/news?stock=${stock.code}" 
+        <a href="javascript:void(0)" 
+           onclick="filterByStock('${stock.code}')"
            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
                   ${getMarketColor(stock.market)}
                   hover:opacity-80
@@ -136,10 +196,132 @@ function updateStockCloud() {
     `).join('');
 }
 
-// Initialize on page load
+// News Feed Variables
+let currentPage = 1;
+const pageSize = 20;
+
+// Load news on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeMarketCheckboxes();
     updateStockCloud();
+    loadNews();
 });
+
+async function loadNews() {
+    const search = document.getElementById('searchInput').value;
+    const stock = document.getElementById('stockFilter').value;
+    const dateFrom = document.getElementById('dateFrom').value;
+    const dateTo = document.getElementById('dateTo').value;
+
+    const params = new URLSearchParams({
+        page: currentPage,
+        page_size: pageSize
+    });
+
+    if (search) params.append('search', search);
+    if (stock) params.append('stock', stock);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+
+    try {
+        const response = await fetch(`/api/news?${params}`);
+        const data = await response.json();
+        
+        renderNews(data.items);
+        updatePagination(data);
+    } catch (error) {
+        console.error('Error loading news:', error);
+    }
+}
+
+function renderNews(items) {
+    const container = document.getElementById('newsContainer');
+    container.innerHTML = '';
+
+    if (items.length === 0) {
+        container.innerHTML = '<div class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No news found</div>';
+        return;
+    }
+
+    items.forEach(item => {
+        const stocksHtml = item.stocks.map(s => 
+            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">${s}</span>`
+        ).join('');
+
+        const infosHtml = item.infos.map(i => 
+            `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">${i}</span>`
+        ).join('');
+
+        const html = `
+            <div class="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">${item.title || 'Untitled'}</h4>
+                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">${item.content || ''}</p>
+                        <div class="mt-2 flex flex-wrap gap-1">
+                            ${stocksHtml}
+                            ${infosHtml}
+                        </div>
+                    </div>
+                    <div class="ml-4 flex-shrink-0 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        ${item.timestamp}
+                    </div>
+                </div>
+                ${item.route ? `<a href="${item.route}" target="_blank" class="mt-2 inline-flex items-center text-sm text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300">View on Gelonghui →</a>` : ''}
+            </div>
+        `;
+        container.innerHTML += html;
+    });
+}
+
+function updatePagination(data) {
+    const from = (data.page - 1) * data.page_size + 1;
+    const to = Math.min(data.page * data.page_size, data.total);
+
+    document.getElementById('showingFrom').textContent = data.total > 0 ? from : 0;
+    document.getElementById('showingTo').textContent = to;
+    document.getElementById('totalItems').textContent = data.total;
+    document.getElementById('totalCount').textContent = `${data.total} items`;
+    document.getElementById('pageInfo').textContent = `Page ${data.page} of ${data.total_pages}`;
+
+    document.getElementById('prevBtn').disabled = data.page <= 1;
+    document.getElementById('nextBtn').disabled = data.page >= data.total_pages;
+}
+
+function previousPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        loadNews();
+    }
+}
+
+function nextPage() {
+    currentPage++;
+    loadNews();
+}
+
+function applyFilters() {
+    currentPage = 1;
+    loadNews();
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('stockFilter').value = '';
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    currentPage = 1;
+    loadNews();
+}
+
+// Filter by stock code (called when clicking stock in hashtag cloud)
+function filterByStock(stockCode) {
+    document.getElementById('stockFilter').value = stockCode;
+    currentPage = 1;
+    loadNews();
+    
+    // Scroll to news feed section
+    document.querySelector('#newsContainer').scrollIntoView({ behavior: 'smooth' });
+}
 </script>
 {% endblock %}
