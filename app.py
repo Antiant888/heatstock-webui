@@ -169,7 +169,7 @@ async def news_page(request: Request):
 
 @app.get("/stocks", response_class=HTMLResponse)
 async def stocks_page(request: Request):
-    """Stock frequency analysis page - today's news only with market filter"""
+    """Stock frequency analysis page - today's news only with market filter and all-time news"""
     session = get_session(engine)
     try:
         # Get available markets
@@ -183,10 +183,29 @@ async def stocks_page(request: Request):
         # Get today's stock frequency (all markets combined, top 50)
         stock_frequency = get_stock_frequency_today(session, limit=50)
         
+        # Get all-time news (up to 50 items)
+        all_time_news = session.query(HKStockLive)\
+            .order_by(desc(HKStockLive.create_timestamp))\
+            .limit(50)\
+            .all()
+        
+        all_time_news_data = []
+        for news in all_time_news:
+            all_time_news_data.append({
+                'id': news.id,
+                'title': news.title or 'Untitled',
+                'content': news.content or '',
+                'timestamp': timestamp_to_hkt(news.create_timestamp),
+                'create_timestamp': news.create_timestamp,
+                'stocks': extract_stock_codes(news.related_stocks),
+                'infos': extract_info_names(news.related_infos)
+            })
+        
         context = {
             "stock_frequency_json": json.dumps(stock_frequency),
             "available_markets_json": json.dumps(available_markets),
-            "market_stock_data_json": json.dumps(market_stock_data)
+            "market_stock_data_json": json.dumps(market_stock_data),
+            "all_time_news_json": json.dumps(all_time_news_data)
         }
         
         # Manually render template to bypass TemplateResponse issues
