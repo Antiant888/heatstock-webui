@@ -169,13 +169,24 @@ async def news_page(request: Request):
 
 @app.get("/stocks", response_class=HTMLResponse)
 async def stocks_page(request: Request):
-    """Stock frequency analysis page - today's news only"""
+    """Stock frequency analysis page - today's news only with market filter"""
     session = get_session(engine)
     try:
-        # Get today's stock frequency only
+        # Get available markets
+        available_markets = get_available_markets(session)
+        
+        # Get stock frequency by market for each available market (today only)
+        market_stock_data = {}
+        for market in available_markets:
+            market_stock_data[market] = get_stock_frequency_today_by_market(session, market, limit=50)
+        
+        # Get today's stock frequency (all markets combined, top 50)
         stock_frequency = get_stock_frequency_today(session, limit=50)
+        
         context = {
-            "stock_frequency_json": json.dumps(stock_frequency)
+            "stock_frequency_json": json.dumps(stock_frequency),
+            "available_markets_json": json.dumps(available_markets),
+            "market_stock_data_json": json.dumps(market_stock_data)
         }
         
         # Manually render template to bypass TemplateResponse issues

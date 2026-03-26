@@ -2,6 +2,14 @@
 
 {% block content %}
 <div class="space-y-6">
+    <!-- Market Filter -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Filter by Market</h3>
+        <div id="marketCheckboxes" class="flex flex-wrap gap-3">
+            <!-- Checkboxes will be populated by JavaScript -->
+        </div>
+    </div>
+
     <!-- Stock Frequency Cloud -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Stock Frequency (Today's News)</h3>
@@ -12,19 +20,74 @@
 </div>
 
 <script>
-// Stock frequency data from backend
+// Data from backend
 const stockFrequency = JSON.parse('{{ stock_frequency_json|safe }}');
+const availableMarkets = JSON.parse('{{ available_markets_json|safe }}');
+const marketStockData = JSON.parse('{{ market_stock_data_json|safe }}');
 
-// Render hashtag cloud
-function renderStockCloud() {
-    const cloudContainer = document.getElementById('stockCloud');
+// Default markets (HK and US)
+let selectedMarkets = new Set(['HK', 'US'].filter(m => availableMarkets.includes(m)));
+
+// Initialize market checkboxes
+function initializeMarketCheckboxes() {
+    const container = document.getElementById('marketCheckboxes');
     
-    if (!stockFrequency || stockFrequency.length === 0) {
-        cloudContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No stock data available for today</p>';
+    if (!availableMarkets || availableMarkets.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No markets available</p>';
         return;
     }
     
-    cloudContainer.innerHTML = stockFrequency.map(stock => `
+    container.innerHTML = availableMarkets.map(market => `
+        <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" 
+                   class="market-checkbox form-checkbox h-5 w-5 text-green-600 dark:text-green-400 rounded border-gray-300 dark:border-gray-600 focus:ring-green-500"
+                   value="${market}" 
+                   ${selectedMarkets.has(market) ? 'checked' : ''}>
+            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">${market}</span>
+        </label>
+    `).join('');
+    
+    // Add event listeners
+    const checkboxes = container.querySelectorAll('.market-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                selectedMarkets.add(this.value);
+            } else {
+                selectedMarkets.delete(this.value);
+            }
+            updateStockCloud();
+        });
+    });
+}
+
+// Update stock cloud based on selected markets
+function updateStockCloud() {
+    const cloudContainer = document.getElementById('stockCloud');
+    
+    if (selectedMarkets.size === 0) {
+        cloudContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">Please select at least one market</p>';
+        return;
+    }
+    
+    // Combine stocks from selected markets
+    let combinedStocks = [];
+    selectedMarkets.forEach(market => {
+        if (marketStockData[market]) {
+            combinedStocks = combinedStocks.concat(marketStockData[market]);
+        }
+    });
+    
+    // Sort by frequency and take top 50
+    combinedStocks.sort((a, b) => b.frequency - a.frequency);
+    const top50Stocks = combinedStocks.slice(0, 50);
+    
+    if (top50Stocks.length === 0) {
+        cloudContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No stock data available for selected markets</p>';
+        return;
+    }
+    
+    cloudContainer.innerHTML = top50Stocks.map(stock => `
         <a href="/news?stock=${stock.code}" 
            class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium 
                   bg-gray-100 dark:bg-gray-700 
@@ -38,7 +101,10 @@ function renderStockCloud() {
     `).join('');
 }
 
-// Initial render
-renderStockCloud();
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeMarketCheckboxes();
+    updateStockCloud();
+});
 </script>
 {% endblock %}
