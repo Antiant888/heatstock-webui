@@ -237,8 +237,20 @@ async function loadNews() {
         page_size: pageSize
     });
 
-    if (search) params.append('search', search);
-    if (stock) params.append('stock', stock);
+    // Use correct API parameter based on filter type
+    if (activeFilter.type === 'info') {
+        // When filtering by info category, use 'info' parameter
+        params.append('info', activeFilter.value);
+    } else if (activeFilter.type === 'stock') {
+        // When filtering by stock, use 'stock' parameter
+        params.append('stock', activeFilter.value);
+    } else if (search) {
+        // When using search, use 'search' parameter
+        params.append('search', search);
+    } else if (stock) {
+        // When using stock filter input, use 'stock' parameter
+        params.append('stock', stock);
+    }
 
     try {
         const response = await fetch(`/api/news?${params}`);
