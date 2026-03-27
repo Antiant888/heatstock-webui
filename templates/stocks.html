@@ -18,6 +18,14 @@
         </div>
     </div>
 
+    <!-- Info Frequency Cloud -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Info Frequency (Today's News)</h3>
+        <div id="infoCloud" class="flex flex-wrap gap-3">
+            <!-- Info hashtags will be populated by JavaScript -->
+        </div>
+    </div>
+
     <!-- News Feed Section -->
     <div class="space-y-6">
         <!-- Filters -->
@@ -93,6 +101,7 @@
 let stockFrequency = [];
 let availableMarkets = [];
 let marketStockData = {};
+let infoFrequency = [];
 
 try {
     stockFrequency = JSON.parse('{{ stock_frequency_json }}') || [];
@@ -110,6 +119,12 @@ try {
     marketStockData = JSON.parse('{{ market_stock_data_json }}') || {};
 } catch (e) {
     console.warn('Failed to parse marketStockData:', e);
+}
+
+try {
+    infoFrequency = JSON.parse('{{ info_frequency_json }}') || [];
+} catch (e) {
+    console.warn('Failed to parse infoFrequency:', e);
 }
 
 // Default markets (HK and US)
@@ -209,6 +224,7 @@ let activeFilter = { type: null, value: null }; // Track active filter
 document.addEventListener('DOMContentLoaded', function() {
     initializeMarketCheckboxes();
     updateStockCloud();
+    updateInfoCloud();
     loadNews();
 });
 
@@ -354,6 +370,28 @@ function filterByStock(stockCode) {
     
     // Scroll to news feed section
     document.querySelector('#newsContainer').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Update info cloud
+function updateInfoCloud() {
+    const cloudContainer = document.getElementById('infoCloud');
+    
+    if (!infoFrequency || infoFrequency.length === 0) {
+        cloudContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No info data available</p>';
+        return;
+    }
+    
+    cloudContainer.innerHTML = infoFrequency.map(info => `
+        <a href="javascript:void(0)" 
+           onclick="filterByInfo('${info.name}')"
+           class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                  bg-green-500/20 dark:bg-green-500/30 text-green-700 dark:text-green-300
+                  hover:opacity-80
+                  transition-all duration-200 
+                  hover:scale-105 hover:shadow-md cursor-pointer">
+            ${info.name} (${info.frequency})
+        </a>
+    `).join('');
 }
 
 // Filter by info category (called when clicking info tag)

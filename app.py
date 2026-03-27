@@ -183,10 +183,14 @@ async def stocks_page(request: Request):
         # Get today's stock frequency (all markets combined, top 50)
         stock_frequency = get_stock_frequency_today(session, limit=50)
         
+        # Get today's info frequency (top 50)
+        info_frequency = get_info_frequency_today(session, limit=50)
+        
         context = {
             "stock_frequency_json": json.dumps(stock_frequency),
             "available_markets_json": json.dumps(available_markets),
-            "market_stock_data_json": json.dumps(market_stock_data)
+            "market_stock_data_json": json.dumps(market_stock_data),
+            "info_frequency_json": json.dumps(info_frequency)
         }
         
         # Manually render template to bypass TemplateResponse issues
