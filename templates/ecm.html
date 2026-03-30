@@ -220,57 +220,77 @@ function generateQuarterWave(startYear, endYear) {
 }
 
 function generateTurningPoints(startYear, endYear) {
-    const points = [];
     const decimalBase = dateToDecimal(BASE_DATE);
     const cycleInYears = PI_CYCLE_DAYS / 365.25;
     const halfCycleInYears = HALF_CYCLE_DAYS / 365.25;
-    const seen = new Set();
     
-    // Generate main 8.6-year cycle points
+    // Generate all raw points
+    const rawPoints = [];
+    
+    // Main 8.6-year cycle points
     for (let k = -50; k <= 50; k++) {
         const mainPoint = decimalBase + (k * cycleInYears);
-        if (mainPoint < startYear || mainPoint > endYear) continue;
-        
-        const key = Math.round(mainPoint * 1000);
-        if (seen.has(key)) continue;
-        seen.add(key);
-        
-        const mainDate = decimalToDate(mainPoint);
-        const waveInfo = getWaveType(mainPoint);
-        points.push({
-            date: mainDate,
-            decimalYear: Math.round(mainPoint * 1000) / 1000,
-            type: 'Main (8.6y)',
-            cycle: 'main',
-            waveType: waveInfo.type,
-            waveLabel: waveInfo.label,
-            waveColor: waveInfo.color
-        });
+        if (mainPoint >= startYear && mainPoint <= endYear) {
+            rawPoints.push({
+                decimalYear: mainPoint,
+                type: 'Main (8.6y)',
+                cycle: 'main'
+            });
+        }
     }
     
-    // Generate half 4.3-year cycle points
+    // Half 4.3-year cycle points
     for (let k = -100; k <= 100; k++) {
         const halfPoint = decimalBase + (k * halfCycleInYears);
-        if (halfPoint < startYear || halfPoint > endYear) continue;
+        if (halfPoint >= startYear && halfPoint <= endYear) {
+            rawPoints.push({
+                decimalYear: halfPoint,
+                type: 'Half (4.3y)',
+                cycle: 'half'
+            });
+        }
+    }
+    
+    // Sort by decimal year
+    rawPoints.sort((a, b) => a.decimalYear - b.decimalYear);
+    
+    // Merge points within 3 days (0.0082 years) as resonance points
+    const points = [];
+    const RESONANCE_THRESHOLD = 3 / 365.25; // 3 days in years
+    
+    let i = 0;
+    while (i < rawPoints.length) {
+        const current = rawPoints[i];
+        let merged = { ...current };
+        let isResonance = false;
         
-        const key = Math.round(halfPoint * 1000);
-        if (seen.has(key)) continue;
-        seen.add(key);
+        // Check if next point is within threshold
+        if (i + 1 < rawPoints.length) {
+            const next = rawPoints[i + 1];
+            if (Math.abs(next.decimalYear - current.decimalYear) < RESONANCE_THRESHOLD) {
+                // Merge as resonance point
+                isResonance = true;
+                merged.type = 'Main 8.6y + Half 4.3y (Resonance)';
+                merged.cycle = 'resonance';
+                i++; // Skip next point since we merged it
+            }
+        }
         
-        const halfDate = decimalToDate(halfPoint);
-        const waveInfo = getWaveType(halfPoint);
+        const waveInfo = getWaveType(merged.decimalYear);
         points.push({
-            date: halfDate,
-            decimalYear: Math.round(halfPoint * 1000) / 1000,
-            type: 'Half (4.3y)',
-            cycle: 'half',
+            date: decimalToDate(merged.decimalYear),
+            decimalYear: Math.round(merged.decimalYear * 1000) / 1000,
+            type: merged.type,
+            cycle: merged.cycle,
             waveType: waveInfo.type,
             waveLabel: waveInfo.label,
             waveColor: waveInfo.color
         });
+        
+        i++;
     }
     
-    return points.sort((a, b) => a.decimalYear - b.decimalYear);
+    return points;
 }
 
 function getTurningPointDates(startYear, endYear) {
