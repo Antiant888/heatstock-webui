@@ -215,9 +215,6 @@ function generateHalfWave(startYear, endYear) {
     return generateECMWave(startYear, endYear, HALF_CYCLE_DAYS);
 }
 
-function generateQuarterWave(startYear, endYear) {
-    return generateECMWave(startYear, endYear, HALF_CYCLE_DAYS / 2);
-}
 
 function generateTurningPoints(startYear, endYear) {
     const decimalBase = dateToDecimal(BASE_DATE);
@@ -332,7 +329,6 @@ function createChart(startYear, endYear) {
     
     const mainWaveData = generateMainWave(startYear, endYear);
     const halfWaveData = generateHalfWave(startYear, endYear);
-    const quarterWaveData = generateQuarterWave(startYear, endYear);
     const { mainPoints, halfPoints } = getTurningPointDates(startYear, endYear);
     
     const showMain = document.getElementById('showMainCycle').checked;
@@ -551,21 +547,6 @@ function createChart(startYear, endYear) {
                     pointHoverBorderColor: 'white',
                     pointHoverBorderWidth: 2
                 },
-                {
-                    label: 'Quarter Wave (2.15y)',
-                    data: quarterWaveData,
-                    borderColor: isDark ? 'rgba(245, 158, 11, 0.4)' : 'rgba(217, 119, 6, 0.4)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 1,
-                    borderDash: [3, 3],
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 3,
-                    pointHoverBackgroundColor: isDark ? '#f59e0b' : '#d97706',
-                    pointHoverBorderColor: 'white',
-                    pointHoverBorderWidth: 2
-                }
             ]
         },
         options: {
