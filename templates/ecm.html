@@ -187,14 +187,14 @@ function getWaveType(decimalYear, cycleNumber) {
     };
 }
 
-function generateECMWave(startYear, endYear) {
+function generateECMWave(startYear, endYear, cycleDays) {
     const data = [];
     const decimalBase = dateToDecimal(BASE_DATE);
     
     let current = startYear;
     while (current <= endYear) {
         const daysDiff = (current - decimalBase) * 365.25;
-        const cyclePosition = daysDiff / PI_CYCLE_DAYS;
+        const cyclePosition = daysDiff / cycleDays;
         const waveValue = Math.sin(2 * Math.PI * cyclePosition);
         
         data.push({
@@ -205,6 +205,18 @@ function generateECMWave(startYear, endYear) {
         current += 0.02;
     }
     return data;
+}
+
+function generateMainWave(startYear, endYear) {
+    return generateECMWave(startYear, endYear, PI_CYCLE_DAYS);
+}
+
+function generateHalfWave(startYear, endYear) {
+    return generateECMWave(startYear, endYear, HALF_CYCLE_DAYS);
+}
+
+function generateQuarterWave(startYear, endYear) {
+    return generateECMWave(startYear, endYear, HALF_CYCLE_DAYS / 2);
 }
 
 function generateTurningPoints(startYear, endYear) {
@@ -298,7 +310,9 @@ function createChart(startYear, endYear) {
         ecmChart.destroy();
     }
     
-    const waveData = generateECMWave(startYear, endYear);
+    const mainWaveData = generateMainWave(startYear, endYear);
+    const halfWaveData = generateHalfWave(startYear, endYear);
+    const quarterWaveData = generateQuarterWave(startYear, endYear);
     const { mainPoints, halfPoints } = getTurningPointDates(startYear, endYear);
     
     const showMain = document.getElementById('showMainCycle').checked;
@@ -487,20 +501,52 @@ function createChart(startYear, endYear) {
     ecmChart = new Chart(ctx, {
         type: 'line',
         data: {
-            datasets: [{
-                label: 'ECM Wave (π × 1000 Cycle)',
-                data: waveData,
-                borderColor: isDark ? '#10b981' : '#059669',
-                backgroundColor: gradientFill,
-                borderWidth: 2.5,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: isDark ? '#10b981' : '#059669',
-                pointHoverBorderColor: 'white',
-                pointHoverBorderWidth: 2
-            }]
+            datasets: [
+                {
+                    label: 'Main Wave (8.6y)',
+                    data: mainWaveData,
+                    borderColor: isDark ? '#10b981' : '#059669',
+                    backgroundColor: gradientFill,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: isDark ? '#10b981' : '#059669',
+                    pointHoverBorderColor: 'white',
+                    pointHoverBorderWidth: 2
+                },
+                {
+                    label: 'Half Wave (4.3y)',
+                    data: halfWaveData,
+                    borderColor: isDark ? 'rgba(59, 130, 246, 0.6)' : 'rgba(37, 99, 235, 0.6)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1.5,
+                    borderDash: [8, 4],
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4,
+                    pointHoverBackgroundColor: isDark ? '#3b82f6' : '#2563eb',
+                    pointHoverBorderColor: 'white',
+                    pointHoverBorderWidth: 2
+                },
+                {
+                    label: 'Quarter Wave (2.15y)',
+                    data: quarterWaveData,
+                    borderColor: isDark ? 'rgba(245, 158, 11, 0.4)' : 'rgba(217, 119, 6, 0.4)',
+                    backgroundColor: 'transparent',
+                    borderWidth: 1,
+                    borderDash: [3, 3],
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                    pointHoverBackgroundColor: isDark ? '#f59e0b' : '#d97706',
+                    pointHoverBorderColor: 'white',
+                    pointHoverBorderWidth: 2
+                }
+            ]
         },
         options: {
             responsive: true,
