@@ -286,10 +286,10 @@ function createChart(startYear, endYear) {
     const showQuarter = document.getElementById('showQuarterCycle').checked;
     const showEvents = document.getElementById('showEvents').checked;
     
-    // Build vertical line annotations
+    // Build annotations
     const annotations = {};
     
-    // Main cycle turning points
+    // Main cycle turning points (vertical lines)
     if (showMain) {
         mainPoints.forEach((point, idx) => {
             annotations[`main_${idx}`] = {
@@ -311,7 +311,7 @@ function createChart(startYear, endYear) {
         });
     }
     
-    // Half cycle turning points
+    // Half cycle turning points (vertical lines)
     if (showHalf) {
         halfPoints.forEach((point, idx) => {
             annotations[`half_${idx}`] = {
@@ -333,7 +333,7 @@ function createChart(startYear, endYear) {
         });
     }
     
-    // Quarter cycle turning points
+    // Quarter cycle turning points (thin dashed lines)
     if (showQuarter) {
         quarterPoints.forEach((point, idx) => {
             annotations[`quarter_${idx}`] = {
@@ -347,36 +347,88 @@ function createChart(startYear, endYear) {
         });
     }
     
-    // Historical events
+    // Historical events as point annotations on the curve
     if (showEvents) {
         HISTORICAL_EVENTS.forEach((event, idx) => {
             if (event.date >= startYear && event.date <= endYear) {
-                annotations[`event_${idx}`] = {
-                    type: 'line',
-                    xMin: event.date,
-                    xMax: event.date,
-                    borderColor: event.color,
+                // Find the wave value at this event date
+                const eventWaveValue = Math.sin(2 * Math.PI * ((event.date - dateToDecimal(BASE_DATE)) * 365.25 / PI_CYCLE_DAYS));
+                
+                annotations[`event_point_${idx}`] = {
+                    type: 'point',
+                    xValue: event.date,
+                    yValue: eventWaveValue,
+                    backgroundColor: event.color,
+                    borderColor: 'white',
                     borderWidth: 2,
-                    borderDash: [8, 4],
+                    radius: 6,
                     label: {
                         display: true,
-                        content: event.name,
-                        position: 'end',
+                        content: event.name.length > 20 ? event.name.substring(0, 18) + '...' : event.name,
+                        position: eventWaveValue > 0 ? 'top' : 'bottom',
                         backgroundColor: event.color,
                         color: 'white',
-                        font: { size: 9 },
-                        rotation: -90,
-                        yAdjust: -20
+                        font: { size: 8 },
+                        padding: 4,
+                        yAdjust: eventWaveValue > 0 ? -12 : 12
                     }
                 };
             }
         });
     }
     
+    // Today marker
+    const todayDecimal = dateToDecimal(new Date());
+    if (todayDecimal >= startYear && todayDecimal <= endYear) {
+        const todayWaveValue = Math.sin(2 * Math.PI * ((todayDecimal - dateToDecimal(BASE_DATE)) * 365.25 / PI_CYCLE_DAYS));
+        
+        annotations['today_line'] = {
+            type: 'line',
+            xMin: todayDecimal,
+            xMax: todayDecimal,
+            borderColor: '#ef4444',
+            borderWidth: 3,
+            borderDash: [6, 3],
+            label: {
+                display: true,
+                content: 'TODAY',
+                position: 'end',
+                backgroundColor: '#ef4444',
+                color: 'white',
+                font: { size: 11, weight: 'bold' },
+                padding: 6
+            }
+        };
+        
+        annotations['today_point'] = {
+            type: 'point',
+            xValue: todayDecimal,
+            yValue: todayWaveValue,
+            backgroundColor: '#ef4444',
+            borderColor: 'white',
+            borderWidth: 3,
+            radius: 8
+        };
+    }
+    
     // Get dark mode
     const isDark = document.documentElement.classList.contains('dark');
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
     const textColor = isDark ? '#d1d5db' : '#374151';
+    
+    // Create gradient fill (green above, red below)
+    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
+    if (isDark) {
+        gradientFill.addColorStop(0, 'rgba(16, 185, 129, 0.4)');    // Green top
+        gradientFill.addColorStop(0.5, 'rgba(16, 185, 129, 0.05)'); // Near zero
+        gradientFill.addColorStop(0.5, 'rgba(239, 68, 68, 0.05)');  // Near zero
+        gradientFill.addColorStop(1, 'rgba(239, 68, 68, 0.4)');     // Red bottom
+    } else {
+        gradientFill.addColorStop(0, 'rgba(5, 150, 105, 0.3)');     // Green top
+        gradientFill.addColorStop(0.5, 'rgba(5, 150, 105, 0.05)');  // Near zero
+        gradientFill.addColorStop(0.5, 'rgba(220, 38, 38, 0.05)');  // Near zero
+        gradientFill.addColorStop(1, 'rgba(220, 38, 38, 0.3)');     // Red bottom
+    }
     
     ecmChart = new Chart(ctx, {
         type: 'line',
@@ -385,23 +437,32 @@ function createChart(startYear, endYear) {
                 label: 'ECM Wave (π × 1000 Cycle)',
                 data: waveData,
                 borderColor: isDark ? '#10b981' : '#059669',
-                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
-                borderWidth: 2,
+                backgroundColor: gradientFill,
+                borderWidth: 2.5,
                 fill: true,
-                tension: 0.4,
-                pointRadius: 0
+                tension: 0.3,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: isDark ? '#10b981' : '#059669',
+                pointHoverBorderColor: 'white',
+                pointHoverBorderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             scales: {
                 x: {
                     type: 'linear',
                     title: {
                         display: true,
                         text: 'Year',
-                        color: textColor
+                        color: textColor,
+                        font: { size: 13, weight: 'bold' }
                     },
                     grid: {
                         color: gridColor
@@ -417,8 +478,9 @@ function createChart(startYear, endYear) {
                 y: {
                     title: {
                         display: true,
-                        text: 'ECM Value',
-                        color: textColor
+                        text: 'ECM Value (Bullish ↑ / Bearish ↓)',
+                        color: textColor,
+                        font: { size: 13, weight: 'bold' }
                     },
                     grid: {
                         color: gridColor
@@ -433,20 +495,35 @@ function createChart(startYear, endYear) {
             plugins: {
                 legend: {
                     labels: {
-                        color: textColor
+                        color: textColor,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                    titleColor: isDark ? '#f3f4f6' : '#111827',
+                    bodyColor: isDark ? '#d1d5db' : '#374151',
+                    borderColor: isDark ? '#4b5563' : '#d1d5db',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                        title: function(context) {
+                            const year = context[0].parsed.x;
+                            return `Year: ${year.toFixed(2)}`;
+                        },
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const mood = value > 0 ? '🟢 Bullish' : value < 0 ? '🔴 Bearish' : '⚪ Neutral';
+                            return `ECM: ${value.toFixed(3)} (${mood})`;
+                        }
                     }
                 },
                 annotation: {
                     annotations: annotations
                 }
             }
-        },
-        plugins: [{
-            id: 'customAnnotations',
-            afterDraw: function(chart) {
-                // Additional custom drawing if needed
-            }
-        }]
+        }
     });
 }
 
