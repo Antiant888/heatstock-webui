@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Martin Armstrong ECM (Pi Cycle)</h2>
+        <p class="text-gray-600 dark:text-gray-400">Economic Confidence Model — 8.6 Year Cycle (π × 1000 = 3141 days)</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Chart Controls</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Year</label>
+                <input type="number" id="startYear" value="2000" min="1900" max="2100"
+                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Year</label>
+                <input type="number" id="endYear" value="2040" min="1900" max="2100"
+                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
+            </div>
+            <div class="flex items-end">
+                <button onclick="updateChart()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Update Chart
+                </button>
+            </div>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-4">
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="showMainCycle" checked class="form-checkbox h-5 w-5 text-green-600 dark:text-green-400 rounded border-gray-300 dark:border-gray-600 focus:ring-green-500">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Main Cycle (8.6y)</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="showHalfCycle" checked class="form-checkbox h-5 w-5 text-green-600 dark:text-green-400 rounded border-gray-300 dark:border-gray-600 focus:ring-green-500">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Half Cycle (4.3y)</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="showQuarterCycle" checked class="form-checkbox h-5 w-5 text-green-600 dark:text-green-400 rounded border-gray-300 dark:border-gray-600 focus:ring-green-500">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Quarter Cycle (2.15y)</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="showEvents" checked class="form-checkbox h-5 w-5 text-green-600 dark:text-green-400 rounded border-gray-300 dark:border-gray-600 focus:ring-green-500">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Historical Events</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
+        <canvas id="ecmChart" height="400"></canvas>
+    </div>
+
+    <!-- Turning Points Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Upcoming Turning Points</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Decimal Year</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cycle Type</th>
+                    </tr>
+                </thead>
+                <tbody id="turningPointsTable" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Historical Events Reference -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow transition-colors duration-300">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white">Historical Market Events</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="eventsList">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Configuration
+const BASE_DATE = new Date(1929, 8, 20); // 1929.75 - Great Depression high point
+const PI_CYCLE_DAYS = 3141;
+
+// Historical market events
+const HISTORICAL_EVENTS = [
+    { date: 1929.75, name: "Great Depression Peak", color: "#ef4444" },
+    { date: 1932.67, name: "Great Depression Bottom", color: "#22c55e" },
+    { date: 1937.25, name: "1937 Recession", color: "#ef4444" },
+    { date: 1942.50, name: "WWII Market Bottom", color: "#22c55e" },
+    { date: 1949.50, name: "Post-War Bottom", color: "#22c55e" },
+    { date: 1956.00, name: "1956 Peak", color: "#ef4444" },
+    { date: 1962.50, name: "1962 Flash Crash", color: "#ef4444" },
+    { date: 1966.00, name: "1966 Bear Market", color: "#ef4444" },
+    { date: 1970.50, name: "1970 Recession", color: "#ef4444" },
+    { date: 1973.50, name: "1973 Oil Crisis", color: "#ef4444" },
+    { date: 1974.75, name: "1974 Bottom", color: "#22c55e" },
+    { date: 1982.50, name: "1982 Bull Market Start", color: "#22c55e" },
+    { date: 1987.75, name: "Black Monday 1987", color: "#ef4444" },
+    { date: 1990.50, name: "1990 Recession", color: "#ef4444" },
+    { date: 1994.75, name: "1994 Bond Massacre", color: "#ef4444" },
+    { date: 1998.67, name: "LTCM Crisis 1998", color: "#ef4444" },
+    { date: 2000.50, name: "Dot-com Bubble Peak", color: "#ef4444" },
+    { date: 2002.75, name: "Dot-com Bottom", color: "#22c55e" },
+    { date: 2007.67, name: "GFC Peak (Subprime)", color: "#ef4444" },
+    { date: 2009.25, name: "GFC Bottom", color: "#22c55e" },
+    { date: 2011.67, name: "2011 Debt Ceiling", color: "#ef4444" },
+    { date: 2015.75, name: "2015 China Crash", color: "#ef4444" },
+    { date: 2018.75, name: "2018 Q4 Selloff", color: "#ef4444" },
+    { date: 2020.25, name: "COVID-19 Crash", color: "#ef4444" },
+    { date: 2020.50, name: "COVID Recovery Start", color: "#22c55e" },
+    { date: 2022.50, name: "2022 Bear Market", color: "#ef4444" },
+    { date: 2026.50, name: "ECM Turning Point (Predicted)", color: "#f59e0b" },
+    { date: 2027.17, name: "Half Cycle (Predicted)", color: "#f59e0b" },
+    { date: 2032.95, name: "8.6 Year Cycle End (Predicted)", color: "#f59e0b" }
+];
+
+// Chart instance
+let ecmChart = null;
+
+// Utility functions
+function dateToDecimal(date) {
+    const year = date.getFullYear();
+    const start = new Date(year, 0, 1);
+    const dayOfYear = Math.floor((date - start) / (1000 * 60 * 60 * 24)) + 1;
+    const daysInYear = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+    return year + (dayOfYear - 1) / daysInYear;
+}
+
+function decimalToDate(decimalYear) {
+    const year = Math.floor(decimalYear);
+    const fraction = decimalYear - year;
+    const daysInYear = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+    const dayOfYear = Math.floor(fraction * daysInYear) + 1;
+    const date = new Date(year, 0, 1);
+    date.setDate(date.getDate() + dayOfYear - 1);
+    return date;
+}
+
+function generateECMWave(startYear, endYear) {
+    const data = [];
+    const decimalBase = dateToDecimal(BASE_DATE);
+    
+    // Generate daily data points
+    let current = startYear;
+    while (current <= endYear) {
+        // Calculate sine wave value
+        // The wave oscillates based on the distance from base date in cycles
+        const daysDiff = (current - decimalBase) * 365.25;
+        const cyclePosition = daysDiff / PI_CYCLE_DAYS;
+        const waveValue = Math.sin(2 * Math.PI * cyclePosition);
+        
+        data.push({
+            x: current,
+            y: waveValue
+        });
+        
+        current += 0.02; // ~7 days step
+    }
+    return data;
+}
+
+function generateTurningPoints(startYear, endYear) {
+    const points = [];
+    const decimalBase = dateToDecimal(BASE_DATE);
+    const cycleInYears = PI_CYCLE_DAYS / 365.25;
+    
+    // Calculate all turning points within range
+    let i = -50; // Start from before
+    while (true) {
+        const mainPoint = decimalBase + (i * cycleInYears);
+        if (mainPoint > endYear + 5) break;
+        
+        if (mainPoint >= startYear - 5) {
+            // Main cycle turning point
+            const mainDate = decimalToDate(mainPoint);
+            points.push({
+                date: mainDate,
+                decimalYear: Math.round(mainPoint * 1000) / 1000,
+                type: 'Main (8.6y)',
+                cycle: 'main'
+            });
+            
+            // Half cycle
+            const halfPoint = mainPoint + (cycleInYears / 2);
+            if (halfPoint >= startYear && halfPoint <= endYear) {
+                const halfDate = decimalToDate(halfPoint);
+                points.push({
+                    date: halfDate,
+                    decimalYear: Math.round(halfPoint * 1000) / 1000,
+                    type: 'Half (4.3y)',
+                    cycle: 'half'
+                });
+            }
+            
+            // Quarter cycles
+            const quarterPoint1 = mainPoint + (cycleInYears / 4);
+            const quarterPoint2 = mainPoint + (cycleInYears * 3 / 4);
+            
+            if (quarterPoint1 >= startYear && quarterPoint1 <= endYear) {
+                const qDate1 = decimalToDate(quarterPoint1);
+                points.push({
+                    date: qDate1,
+                    decimalYear: Math.round(quarterPoint1 * 1000) / 1000,
+                    type: 'Quarter (2.15y)',
+                    cycle: 'quarter'
+                });
+            }
+            if (quarterPoint2 >= startYear && quarterPoint2 <= endYear) {
+                const qDate2 = decimalToDate(quarterPoint2);
+                points.push({
+                    date: qDate2,
+                    decimalYear: Math.round(quarterPoint2 * 1000) / 1000,
+                    type: 'Quarter (2.15y)',
+                    cycle: 'quarter'
+                });
+            }
+        }
+        i++;
+    }
+    
+    // Sort by date and filter to range
+    return points
+        .filter(p => p.decimalYear >= startYear && p.decimalYear <= endYear)
+        .sort((a, b) => a.decimalYear - b.decimalYear);
+}
+
+function getTurningPointDates(startYear, endYear) {
+    const decimalBase = dateToDecimal(BASE_DATE);
+    const cycleInYears = PI_CYCLE_DAYS / 365.25;
+    
+    const mainPoints = [];
+    const halfPoints = [];
+    const quarterPoints = [];
+    
+    let i = -50;
+    while (true) {
+        const mainPoint = decimalBase + (i * cycleInYears);
+        if (mainPoint > endYear + 5) break;
+        
+        if (mainPoint >= startYear && mainPoint <= endYear) {
+            mainPoints.push(mainPoint);
+            
+            const halfPoint = mainPoint + (cycleInYears / 2);
+            if (halfPoint >= startYear && halfPoint <= endYear) {
+                halfPoints.push(halfPoint);
+            }
+            
+            const q1 = mainPoint + (cycleInYears / 4);
+            const q2 = mainPoint + (cycleInYears * 3 / 4);
+            if (q1 >= startYear && q1 <= endYear) quarterPoints.push(q1);
+            if (q2 >= startYear && q2 <= endYear) quarterPoints.push(q2);
+        }
+        i++;
+    }
+    
+    return { mainPoints, halfPoints, quarterPoints };
+}
+
+function createChart(startYear, endYear) {
+    const ctx = document.getElementById('ecmChart').getContext('2d');
+    
+    if (ecmChart) {
+        ecmChart.destroy();
+    }
+    
+    // Generate wave data
+    const waveData = generateECMWave(startYear, endYear);
+    
+    // Get turning points for annotations
+    const { mainPoints, halfPoints, quarterPoints } = getTurningPointDates(startYear, endYear);
+    
+    // Get show checkboxes
+    const showMain = document.getElementById('showMainCycle').checked;
+    const showHalf = document.getElementById('showHalfCycle').checked;
+    const showQuarter = document.getElementById('showQuarterCycle').checked;
+    const showEvents = document.getElementById('showEvents').checked;
+    
+    // Build vertical line annotations
+    const annotations = {};
+    
+    // Main cycle turning points
+    if (showMain) {
+        mainPoints.forEach((point, idx) => {
+            annotations[`main_${idx}`] = {
+                type: 'line',
+                xMin: point,
+                xMax: point,
+                borderColor: 'rgba(16, 185, 129, 0.8)',
+                borderWidth: 2,
+                borderDash: [],
+                label: {
+                    display: true,
+                    content: '8.6y',
+                    position: 'start',
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    color: 'white',
+                    font: { size: 10 }
+                }
+            };
+        });
+    }
+    
+    // Half cycle turning points
+    if (showHalf) {
+        halfPoints.forEach((point, idx) => {
+            annotations[`half_${idx}`] = {
+                type: 'line',
+                xMin: point,
+                xMax: point,
+                borderColor: 'rgba(59, 130, 246, 0.6)',
+                borderWidth: 1.5,
+                borderDash: [5, 5],
+                label: {
+                    display: true,
+                    content: '4.3y',
+                    position: 'start',
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    color: 'white',
+                    font: { size: 9 }
+                }
+            };
+        });
+    }
+    
+    // Quarter cycle turning points
+    if (showQuarter) {
+        quarterPoints.forEach((point, idx) => {
+            annotations[`quarter_${idx}`] = {
+                type: 'line',
+                xMin: point,
+                xMax: point,
+                borderColor: 'rgba(245, 158, 11, 0.4)',
+                borderWidth: 1,
+                borderDash: [3, 3]
+            };
+        });
+    }
+    
+    // Historical events
+    if (showEvents) {
+        HISTORICAL_EVENTS.forEach((event, idx) => {
+            if (event.date >= startYear && event.date <= endYear) {
+                annotations[`event_${idx}`] = {
+                    type: 'line',
+                    xMin: event.date,
+                    xMax: event.date,
+                    borderColor: event.color,
+                    borderWidth: 2,
+                    borderDash: [8, 4],
+                    label: {
+                        display: true,
+                        content: event.name,
+                        position: 'end',
+                        backgroundColor: event.color,
+                        color: 'white',
+                        font: { size: 9 },
+                        rotation: -90,
+                        yAdjust: -20
+                    }
+                };
+            }
+        });
+    }
+    
+    // Get dark mode
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    const textColor = isDark ? '#d1d5db' : '#374151';
+    
+    ecmChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'ECM Wave (π × 1000 Cycle)',
+                data: waveData,
+                borderColor: isDark ? '#10b981' : '#059669',
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: {
+                        display: true,
+                        text: 'Year',
+                        color: textColor
+                    },
+                    grid: {
+                        color: gridColor
+                    },
+                    ticks: {
+                        color: textColor,
+                        stepSize: 1,
+                        callback: function(value) {
+                            return value.toFixed(0);
+                        }
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'ECM Value',
+                        color: textColor
+                    },
+                    grid: {
+                        color: gridColor
+                    },
+                    ticks: {
+                        color: textColor
+                    },
+                    min: -1.5,
+                    max: 1.5
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor
+                    }
+                },
+                annotation: {
+                    annotations: annotations
+                }
+            }
+        },
+        plugins: [{
+            id: 'customAnnotations',
+            afterDraw: function(chart) {
+                // Additional custom drawing if needed
+            }
+        }]
+    });
+}
+
+function updateTurningPointsTable(startYear, endYear) {
+    const points = generateTurningPoints(startYear, endYear);
+    const today = new Date();
+    const todayDecimal = dateToDecimal(today);
+    
+    // Filter to upcoming points only
+    const upcoming = points.filter(p => p.decimalYear >= todayDecimal).slice(0, 20);
+    
+    const tbody = document.getElementById('turningPointsTable');
+    tbody.innerHTML = upcoming.map(p => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                ${p.date.toISOString().split('T')[0]}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                ${p.decimalYear}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    p.cycle === 'main' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                    p.cycle === 'half' ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200' :
+                    'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                }">
+                    ${p.type}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateEventsList() {
+    const container = document.getElementById('eventsList');
+    container.innerHTML = HISTORICAL_EVENTS.map(e => `
+        <div class="p-4 rounded-lg border ${
+            e.color === '#ef4444' ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
+            e.color === '#22c55e' ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
+            'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20'
+        }">
+            <div class="font-medium ${
+                e.color === '#ef4444' ? 'text-red-800 dark:text-red-200' :
+                e.color === '#22c55e' ? 'text-green-800 dark:text-green-200' :
+                'text-yellow-800 dark:text-yellow-200'
+            }">${e.name}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${e.date}</div>
+        </div>
+    `).join('');
+}
+
+function updateChart() {
+    const startYear = parseInt(document.getElementById('startYear').value);
+    const endYear = parseInt(document.getElementById('endYear').value);
+    
+    if (startYear >= endYear) {
+        alert('End year must be greater than start year');
+        return;
+    }
+    
+    createChart(startYear, endYear);
+    updateTurningPointsTable(startYear, endYear);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateChart();
+    updateEventsList();
+    
+    // Listen for checkbox changes
+    ['showMainCycle', 'showHalfCycle', 'showQuarterCycle', 'showEvents'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateChart);
+    });
+});
+
+// Listen for theme changes
+document.getElementById('theme-toggle')?.addEventListener('click', function() {
+    setTimeout(updateChart, 300);
+});
+</script>
+{% endblock %}

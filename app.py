@@ -217,6 +217,13 @@ async def infos_page(request: Request):
     finally:
         session.close()
 
+@app.get("/ecm", response_class=HTMLResponse)
+async def ecm_page(request: Request):
+    """ECM (Economic Confidence Model / Pi Cycle) visualization page"""
+    template = jinja_env.get_template("ecm.html")
+    html_content = template.render()
+    return HTMLResponse(content=html_content)
+
 # ────────────────────────────────────────────────
 # JSON API Routes
 # ────────────────────────────────────────────────
