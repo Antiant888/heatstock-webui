@@ -161,20 +161,30 @@ function decimalToDate(decimalYear) {
     return date;
 }
 
-// Classify wave type based on 51.6-year cycle overlay
-function getWaveType(decimalYear) {
-    // Post-2032.95 is always Private Wave (major shift)
+// Classify wave type based on cycle number and time overlay
+function getWaveType(decimalYear, cycleNumber) {
+    // First: Simple alternating pattern (even = Private, odd = Public)
+    const waveNum = Math.abs(cycleNumber);
+    let waveType = waveNum % 2 === 0 ? 'Private' : 'Public';
+    let waveLabel = waveNum % 2 === 0 ? 'Private Wave' : 'Public Wave';
+    
+    // Second: Time-based overlay (takes precedence)
     if (decimalYear > 2032.95) {
-        return { type: 'Private', label: 'Post-2032 Private Wave (Major Shift)', color: '#ef4444' };
+        waveType = 'Private';
+        waveLabel = 'Post-2032 Private Wave (Major Shift)';
+    } else if (decimalYear > 1985) {
+        waveType = 'Private';
+        waveLabel = 'Private Wave (51.6y level - Private assets favored)';
+    } else {
+        waveType = 'Public';
+        waveLabel = 'Public Wave (Government confidence higher)';
     }
     
-    // 1985-2032.95: Private Wave (51.6y level - Private assets favored)
-    if (decimalYear > 1985 && decimalYear <= 2032.95) {
-        return { type: 'Private', label: 'Private Wave (51.6y level)', color: '#ef4444' };
-    }
-    
-    // Before 1985: Public Wave (Government confidence higher)
-    return { type: 'Public', label: 'Public Wave (Government confidence)', color: '#3b82f6' };
+    return {
+        type: waveType,
+        label: waveLabel,
+        color: waveType === 'Private' ? '#ef4444' : '#3b82f6'
+    };
 }
 
 function generateECMWave(startYear, endYear) {
