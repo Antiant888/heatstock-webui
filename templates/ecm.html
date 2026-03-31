@@ -4,8 +4,8 @@
 <div class="space-y-6">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Martin Armstrong ECM (Pi Cycle)</h2>
-        <p class="text-gray-600 dark:text-gray-400">Economic Confidence Model — 8.6 Year Cycle (π × 1000 = 3141 days) | Public / Private Wave Marking</p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Martin Armstrong ECM — 3 Linked Fractal Layers</h2>
+        <p class="text-gray-600 dark:text-gray-400">Economic Confidence Model — π Cycle (8.6y / 51.6y / 309.6y) | Public / Private Wave Marking | Zoom/Pan any chart to sync all</p>
     </div>
 
     <!-- Controls -->
@@ -14,12 +14,12 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Year</label>
-                <input type="number" id="startYear" value="2000" min="1900" max="2100"
+                <input type="number" id="startYear" value="1980" min="1900" max="2100"
                     class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Year</label>
-                <input type="number" id="endYear" value="2040" min="1900" max="2100"
+                <input type="number" id="endYear" value="2050" min="1900" max="2100"
                     class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm">
             </div>
             <div class="flex items-end">
@@ -44,9 +44,10 @@
         </div>
     </div>
 
-    <!-- Chart -->
+    <!-- 3 Linked Charts -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
-        <canvas id="ecmChart" height="400"></canvas>
+        <div id="ecmChart" style="width:100%;height:900px;"></div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">💡 Drag to pan, scroll to zoom. All 3 charts are synchronized!</p>
     </div>
 
     <!-- Legend -->
@@ -64,6 +65,10 @@
             <div class="flex items-center gap-2">
                 <span class="w-4 h-4 rounded-full bg-purple-500"></span>
                 <span class="text-gray-700 dark:text-gray-300">2032.95 Major Peak (Grand Public → Private Shift)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-orange-400 opacity-40"></span>
+                <span class="text-gray-700 dark:text-gray-300">51.6y Private Wave Period (1985.65–2037.5)</span>
             </div>
         </div>
     </div>
@@ -84,7 +89,6 @@
                     </tr>
                 </thead>
                 <tbody id="turningPointsTable" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    <!-- Populated by JavaScript -->
                 </tbody>
             </table>
         </div>
@@ -97,17 +101,22 @@
         </div>
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="eventsList">
-                <!-- Populated by JavaScript -->
             </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script>
-// Configuration
-const BASE_DATE = new Date(2030, 9, 19); // 2030.80 - Aligned so 2032.95 is at peak
-const PI_CYCLE_DAYS = 3141; // 8.6 years
-const HALF_CYCLE_DAYS = 1570; // 4.3 years
+// ==================== Configuration ====================
+const BASE_DATE_STR = '2024-05-08';
+const BASE_DATE = new Date(2024, 4, 8); // May 8, 2024
+const PI_CYCLE_DAYS = 3141;      // 8.6 years
+const HALF_CYCLE_DAYS = 1570;    // 4.3 years
+const PRIVATE_51_6_START = 1985.65;
+const GRAND_PUBLIC_PEAK = 2032.95;
+const LONG_WAVE_PERIOD = 51.6;
+const GRAND_WAVE_PERIOD = 309.6;
 
 // Historical market events
 const HISTORICAL_EVENTS = [
@@ -139,10 +148,7 @@ const HISTORICAL_EVENTS = [
     { date: 2022.50, name: "2022 Bear Market", color: "#ef4444" }
 ];
 
-// Chart instance
-let ecmChart = null;
-
-// Utility functions
+// ==================== Utility Functions ====================
 function dateToDecimal(date) {
     const year = date.getFullYear();
     const start = new Date(year, 0, 1);
@@ -161,485 +167,366 @@ function decimalToDate(decimalYear) {
     return date;
 }
 
-// Classify wave type based on cycle number and time overlay
-function getWaveType(decimalYear, cycleNumber) {
-    // First: Simple alternating pattern (even = Private, odd = Public)
-    const waveNum = Math.abs(cycleNumber);
-    let waveType = waveNum % 2 === 0 ? 'Private' : 'Public';
-    let waveLabel = waveNum % 2 === 0 ? 'Private Wave' : 'Public Wave';
-    
-    // Second: Time-based overlay (takes precedence)
-    if (decimalYear > 2032.95) {
-        waveType = 'Private';
-        waveLabel = 'Post-2032 Private Wave (Major Shift)';
-    } else if (decimalYear > 1985) {
-        waveType = 'Private';
-        waveLabel = 'Private Wave (51.6y level - Private assets favored)';
+function determineWaveType(dec, waveNum) {
+    const subWave = waveNum % 2 === 0 ? "Private" : "Public";
+    let longWave;
+    if (dec >= 2037.5) {
+        longWave = "New 51.6y Public";
+    } else if (dec >= PRIVATE_51_6_START) {
+        longWave = "51.6y Private (Private assets favored)";
     } else {
-        waveType = 'Public';
-        waveLabel = 'Public Wave (Government confidence higher)';
+        longWave = "51.6y Public";
     }
-    
-    return {
-        type: waveType,
-        label: waveLabel,
-        color: waveType === 'Private' ? '#ef4444' : '#3b82f6'
-    };
+    if (dec > GRAND_PUBLIC_PEAK) {
+        return `8.6y:${subWave} | 51.6y:${longWave} | Post-2032.95 Major Shift ★ Gov fighting control`;
+    }
+    return `8.6y:${subWave} | 51.6y:${longWave}`;
 }
 
-function generateECMWave(startYear, endYear, cycleDays) {
-    const data = [];
-    const decimalBase = dateToDecimal(BASE_DATE);
-    
+// ==================== Generate Wave Data ====================
+function generateWaveData(startYear, endYear, period, amplitude, phaseOffset) {
+    const x = [];
+    const y = [];
     let current = startYear;
     while (current <= endYear) {
-        const daysDiff = (current - decimalBase) * 365.25;
-        const cyclePosition = daysDiff / cycleDays;
-        const waveValue = Math.sin(2 * Math.PI * cyclePosition);
-        
-        data.push({
-            x: current,
-            y: waveValue
-        });
-        
+        x.push(current);
+        y.push(amplitude * Math.sin(2 * Math.PI * (current - phaseOffset) / period));
         current += 0.02;
     }
-    return data;
+    return { x, y };
 }
 
-function generateMainWave(startYear, endYear) {
-    return generateECMWave(startYear, endYear, PI_CYCLE_DAYS);
-}
-
-function generateHalfWave(startYear, endYear) {
-    return generateECMWave(startYear, endYear, HALF_CYCLE_DAYS);
-}
-
-
+// ==================== Generate Turning Points ====================
 function generateTurningPoints(startYear, endYear) {
-    const decimalBase = dateToDecimal(BASE_DATE);
+    const baseDecimal = dateToDecimal(BASE_DATE);
     const cycleInYears = PI_CYCLE_DAYS / 365.25;
     const halfCycleInYears = HALF_CYCLE_DAYS / 365.25;
-    
-    // Generate all raw points
-    const rawPoints = [];
-    
-    // Main 8.6-year cycle points
-    for (let k = -50; k <= 50; k++) {
-        const mainPoint = decimalBase + (k * cycleInYears);
-        if (mainPoint >= startYear && mainPoint <= endYear) {
-            rawPoints.push({
-                decimalYear: mainPoint,
-                type: 'Main (8.6y)',
-                cycle: 'main'
-            });
-        }
-    }
-    
-    // Half 4.3-year cycle points
-    for (let k = -100; k <= 100; k++) {
-        const halfPoint = decimalBase + (k * halfCycleInYears);
-        if (halfPoint >= startYear && halfPoint <= endYear) {
-            rawPoints.push({
-                decimalYear: halfPoint,
-                type: 'Half (4.3y)',
-                cycle: 'half'
-            });
-        }
-    }
-    
-    // Sort by decimal year
-    rawPoints.sort((a, b) => a.decimalYear - b.decimalYear);
-    
-    // Merge points within 3 days (0.0082 years) as resonance points
+
     const points = [];
-    const RESONANCE_THRESHOLD = 3 / 365.25; // 3 days in years
-    
-    let i = 0;
-    while (i < rawPoints.length) {
-        const current = rawPoints[i];
-        let merged = { ...current };
-        let isResonance = false;
-        
-        // Check if next point is within threshold
-        if (i + 1 < rawPoints.length) {
-            const next = rawPoints[i + 1];
-            if (Math.abs(next.decimalYear - current.decimalYear) < RESONANCE_THRESHOLD) {
-                // Merge as resonance point
-                isResonance = true;
-                merged.type = 'Main 8.6y + Half 4.3y (Resonance)';
-                merged.cycle = 'resonance';
-                i++; // Skip next point since we merged it
+    const seen = new Set();
+
+    for (let k = -50; k <= 50; k++) {
+        // Main 8.6y cycle
+        const mainDec = baseDecimal + (k * cycleInYears);
+        if (mainDec >= startYear && mainDec <= endYear) {
+            const key = mainDec.toFixed(4);
+            if (!seen.has(key)) {
+                seen.add(key);
+                const waveType = determineWaveType(mainDec, Math.abs(k));
+                points.push({
+                    date: decimalToDate(mainDec),
+                    decimalYear: Math.round(mainDec * 10000) / 10000,
+                    cycleType: 'Main (8.6y)',
+                    waveType: waveType,
+                    isPrivate: waveType.includes('Private')
+                });
             }
         }
-        
-        const waveInfo = getWaveType(merged.decimalYear);
-        points.push({
-            date: decimalToDate(merged.decimalYear),
-            decimalYear: Math.round(merged.decimalYear * 1000) / 1000,
-            type: merged.type,
-            cycle: merged.cycle,
-            waveType: waveInfo.type,
-            waveLabel: waveInfo.label,
-            waveColor: waveInfo.color
-        });
-        
-        i++;
+
+        // Half 4.3y cycle
+        const halfDec = baseDecimal + (k * halfCycleInYears);
+        if (halfDec >= startYear && halfDec <= endYear) {
+            const key = halfDec.toFixed(4);
+            if (!seen.has(key)) {
+                seen.add(key);
+                const waveType = determineWaveType(halfDec, Math.abs(k) * 2);
+                points.push({
+                    date: decimalToDate(halfDec),
+                    decimalYear: Math.round(halfDec * 10000) / 10000,
+                    cycleType: 'Half (4.3y)',
+                    waveType: waveType,
+                    isPrivate: waveType.includes('Private')
+                });
+            }
+        }
     }
-    
+
+    points.sort((a, b) => a.decimalYear - b.decimalYear);
     return points;
 }
 
-function getTurningPointDates(startYear, endYear) {
-    const decimalBase = dateToDecimal(BASE_DATE);
+// ==================== Create 3 Linked Charts ====================
+function createChart(startYear, endYear) {
+    const isDark = document.documentElement.classList.contains('dark');
+    const bgColor = isDark ? '#1f2937' : '#ffffff';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const textColor = isDark ? '#d1d5db' : '#374151';
+
+    // Generate wave data
+    const innerWave = generateWaveData(startYear, endYear, 8.6, 1.0, 2024.35);
+    const midWave = generateWaveData(startYear, endYear, LONG_WAVE_PERIOD, 0.6, 2011.3);
+    const grandWave = generateWaveData(startYear, endYear, GRAND_WAVE_PERIOD, 0.3, 1700);
+
+    // Generate turning point markers
+    const allPoints = [];
+    const baseDecimal = dateToDecimal(BASE_DATE);
     const cycleInYears = PI_CYCLE_DAYS / 365.25;
     const halfCycleInYears = HALF_CYCLE_DAYS / 365.25;
-    
-    const mainPoints = [];
-    const halfPoints = [];
-    
-    // Main cycle points
+
     for (let k = -50; k <= 50; k++) {
-        const mainPoint = decimalBase + (k * cycleInYears);
-        if (mainPoint >= startYear && mainPoint <= endYear) {
-            mainPoints.push(mainPoint);
+        const mainDec = baseDecimal + (k * cycleInYears);
+        if (mainDec >= startYear && mainDec <= endYear) {
+            const waveY = Math.sin(2 * Math.PI * (mainDec - 2024.35) / 8.6);
+            const waveType = determineWaveType(mainDec, Math.abs(k));
+            allPoints.push({ dec: mainDec, y: waveY, waveType, cycleType: 'Main 8.6y' });
         }
     }
-    
-    // Half cycle points
-    for (let k = -100; k <= 100; k++) {
-        const halfPoint = decimalBase + (k * halfCycleInYears);
-        if (halfPoint >= startYear && halfPoint <= endYear) {
-            const isDuplicate = mainPoints.some(p => Math.abs(p - halfPoint) < 0.01);
-            if (!isDuplicate) {
-                halfPoints.push(halfPoint);
-            }
-        }
-    }
-    
-    return { mainPoints, halfPoints };
-}
 
-function createChart(startYear, endYear) {
-    const ctx = document.getElementById('ecmChart').getContext('2d');
-    
-    if (ecmChart) {
-        ecmChart.destroy();
-    }
-    
-    const mainWaveData = generateMainWave(startYear, endYear);
-    const halfWaveData = generateHalfWave(startYear, endYear);
-    const { mainPoints, halfPoints } = getTurningPointDates(startYear, endYear);
-    
-    const showMain = document.getElementById('showMainCycle').checked;
-    const showHalf = document.getElementById('showHalfCycle').checked;
-    const showEvents = document.getElementById('showEvents').checked;
-    
-    const annotations = {};
-    
-    // Main cycle turning points (vertical lines)
-    if (showMain) {
-        mainPoints.forEach((point, idx) => {
-            annotations[`main_${idx}`] = {
-                type: 'line',
-                xMin: point,
-                xMax: point,
-                borderColor: 'rgba(16, 185, 129, 0.8)',
-                borderWidth: 2,
-                borderDash: [],
-                label: {
-                    display: true,
-                    content: '8.6y',
-                    position: 'start',
-                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
-                    color: 'white',
-                    font: { size: 10 }
-                }
-            };
-        });
-    }
-    
-    // Half cycle turning points (vertical lines)
-    if (showHalf) {
-        halfPoints.forEach((point, idx) => {
-            annotations[`half_${idx}`] = {
-                type: 'line',
-                xMin: point,
-                xMax: point,
-                borderColor: 'rgba(59, 130, 246, 0.6)',
-                borderWidth: 1.5,
-                borderDash: [5, 5],
-                label: {
-                    display: true,
-                    content: '4.3y',
-                    position: 'start',
-                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
-                    color: 'white',
-                    font: { size: 9 }
-                }
-            };
-        });
-    }
-    
-    // Historical events as point annotations on the curve
-    if (showEvents) {
-        HISTORICAL_EVENTS.forEach((event, idx) => {
-            if (event.date >= startYear && event.date <= endYear) {
-                const eventWaveValue = Math.sin(2 * Math.PI * ((event.date - dateToDecimal(BASE_DATE)) * 365.25 / PI_CYCLE_DAYS));
-                
-                annotations[`event_point_${idx}`] = {
-                    type: 'point',
-                    xValue: event.date,
-                    yValue: eventWaveValue,
-                    backgroundColor: event.color,
-                    borderColor: 'white',
-                    borderWidth: 2,
-                    radius: 6,
-                    label: {
-                        display: true,
-                        content: event.name.length > 20 ? event.name.substring(0, 18) + '...' : event.name,
-                        position: eventWaveValue > 0 ? 'top' : 'bottom',
-                        backgroundColor: event.color,
-                        color: 'white',
-                        font: { size: 8 },
-                        padding: 4,
-                        yAdjust: eventWaveValue > 0 ? -12 : 12
-                    }
-                };
+    // Historical event markers
+    const eventDecimals = [];
+    const eventYValues = [];
+    const eventLabels = [];
+    const eventColors = [];
+
+    if (document.getElementById('showEvents').checked) {
+        HISTORICAL_EVENTS.forEach(e => {
+            if (e.date >= startYear && e.date <= endYear) {
+                eventDecimals.push(e.date);
+                eventYValues.push(Math.sin(2 * Math.PI * (e.date - 2024.35) / 8.6));
+                eventLabels.push(e.name);
+                eventColors.push(e.color);
             }
         });
     }
-    
-    // 2032.95 Major Peak marker
-    if (2032.95 >= startYear && 2032.95 <= endYear) {
-        const peakWaveValue = Math.sin(2 * Math.PI * ((2032.95 - dateToDecimal(BASE_DATE)) * 365.25 / PI_CYCLE_DAYS));
-        
-        annotations['peak_2032_line'] = {
-            type: 'line',
-            xMin: 2032.95,
-            xMax: 2032.95,
-            borderColor: '#a855f7',
-            borderWidth: 3,
-            borderDash: [10, 5],
-            label: {
-                display: true,
-                content: '2032.95 MAJOR PEAK',
-                position: 'start',
-                backgroundColor: '#a855f7',
-                color: 'white',
-                font: { size: 11, weight: 'bold' },
-                padding: 6
-            }
-        };
-        
-        annotations['peak_2032_point'] = {
-            type: 'point',
-            xValue: 2032.95,
-            yValue: peakWaveValue,
-            backgroundColor: '#a855f7',
-            borderColor: 'white',
-            borderWidth: 3,
-            radius: 10
-        };
-    }
-    
-    // Today marker
-    const todayDecimal = dateToDecimal(new Date());
-    if (todayDecimal >= startYear && todayDecimal <= endYear) {
-        const todayWaveValue = Math.sin(2 * Math.PI * ((todayDecimal - dateToDecimal(BASE_DATE)) * 365.25 / PI_CYCLE_DAYS));
-        
-        annotations['today_line'] = {
-            type: 'line',
-            xMin: todayDecimal,
-            xMax: todayDecimal,
-            borderColor: '#ef4444',
-            borderWidth: 3,
-            borderDash: [6, 3],
-            label: {
-                display: true,
-                content: 'TODAY',
-                position: 'end',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                font: { size: 11, weight: 'bold' },
-                padding: 6
-            }
-        };
-        
-        annotations['today_point'] = {
-            type: 'point',
-            xValue: todayDecimal,
-            yValue: todayWaveValue,
-            backgroundColor: '#ef4444',
-            borderColor: 'white',
-            borderWidth: 3,
-            radius: 8
-        };
-    }
-    
-    // Public/Private wave markers on curve
-    const allPoints = [...mainPoints, ...halfPoints];
-    allPoints.forEach((point, idx) => {
-        const waveValue = Math.sin(2 * Math.PI * ((point - dateToDecimal(BASE_DATE)) * 365.25 / PI_CYCLE_DAYS));
-        const waveInfo = getWaveType(point);
-        
-        annotations[`wave_point_${idx}`] = {
-            type: 'point',
-            xValue: point,
-            yValue: waveValue,
-            backgroundColor: waveInfo.color,
-            borderColor: 'white',
-            borderWidth: 2,
-            radius: 5
-        };
+
+    // Get theme-aware colors for Plotly
+    const traceColor = isDark ? '#10b981' : '#059669';
+    const halfColor = isDark ? 'rgba(59,130,246,0.6)' : 'rgba(37,99,235,0.6)';
+    const midColor = isDark ? '#22c55e' : '#16a34a';
+    const grandColor = isDark ? '#a855f7' : '#7c3aed';
+
+    // Chart 1: Inner layer - 8.6y
+    const traceInner = {
+        x: innerWave.x,
+        y: innerWave.y,
+        mode: 'lines',
+        name: '8.6y Sine Wave',
+        line: { color: traceColor, width: 2 },
+        fill: 'tozeroy',
+        fillcolor: isDark ? 'rgba(16,185,129,0.15)' : 'rgba(5,150,105,0.15)',
+        hovertemplate: 'Year: %{x:.2f}<br>8.6y Value: %{y:.3f}<extra></extra>'
+    };
+
+    // Turning point markers for inner chart
+    const innerMarkerX = allPoints.map(p => p.dec);
+    const innerMarkerY = allPoints.map(p => p.y);
+    const innerMarkerColors = allPoints.map(p => {
+        if (p.dec > GRAND_PUBLIC_PEAK) return '#a855f7';
+        return p.waveType.includes('Private') ? '#ef4444' : '#3b82f6';
     });
-    
-    // Get dark mode
-    const isDark = document.documentElement.classList.contains('dark');
-    const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-    const textColor = isDark ? '#d1d5db' : '#374151';
-    const zeroLineColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)';
-    
-    // Create gradient fill (green above, red below)
-    const gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
-    if (isDark) {
-        gradientFill.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
-        gradientFill.addColorStop(0.5, 'rgba(16, 185, 129, 0.05)');
-        gradientFill.addColorStop(0.5, 'rgba(239, 68, 68, 0.05)');
-        gradientFill.addColorStop(1, 'rgba(239, 68, 68, 0.4)');
-    } else {
-        gradientFill.addColorStop(0, 'rgba(5, 150, 105, 0.3)');
-        gradientFill.addColorStop(0.5, 'rgba(5, 150, 105, 0.05)');
-        gradientFill.addColorStop(0.5, 'rgba(220, 38, 38, 0.05)');
-        gradientFill.addColorStop(1, 'rgba(220, 38, 38, 0.3)');
-    }
-    
-    ecmChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            datasets: [
+    const innerMarkerText = allPoints.map(p => p.waveType);
+
+    const traceInnerMarkers = {
+        x: innerMarkerX,
+        y: innerMarkerY,
+        mode: 'markers+text',
+        name: 'Turning Points',
+        marker: { color: innerMarkerColors, size: 8, line: { color: 'white', width: 1 } },
+        text: innerMarkerX.map(d => d.toFixed(2)),
+        textposition: 'top center',
+        textfont: { size: 9, color: textColor },
+        hovertext: innerMarkerText,
+        hoverinfo: 'text+x+y'
+    };
+
+    // Event markers for inner chart
+    const traceEvents = {
+        x: eventDecimals,
+        y: eventYValues,
+        mode: 'markers',
+        name: 'Historical Events',
+        marker: { color: eventColors, size: 10, symbol: 'diamond', line: { color: 'white', width: 2 } },
+        hovertext: eventLabels,
+        hoverinfo: 'text'
+    };
+
+    // Chart 2: Middle layer - 51.6y
+    const traceMid = {
+        x: midWave.x,
+        y: midWave.y,
+        mode: 'lines',
+        name: '51.6y Wave',
+        line: { color: midColor, width: 3 },
+        hovertemplate: 'Year: %{x:.2f}<br>51.6y Value: %{y:.3f}<extra></extra>'
+    };
+
+    // Chart 3: Outer layer - 309.6y grand wave
+    const traceGrand = {
+        x: grandWave.x,
+        y: grandWave.y,
+        mode: 'lines',
+        name: '309.6y Grand Wave',
+        line: { color: grandColor, width: 4 },
+        hovertemplate: 'Year: %{x:.2f}<br>309.6y Value: %{y:.3f}<extra></extra>'
+    };
+
+    // Create subplots
+    const fig = {
+        data: [traceInner, traceInnerMarkers, traceEvents, traceMid, traceGrand],
+        layout: {
+            height: 900,
+            paper_bgcolor: bgColor,
+            plot_bgcolor: bgColor,
+            font: { color: textColor },
+            hovermode: 'x unified',
+            showlegend: true,
+            legend: { orientation: 'h', y: -0.05 },
+
+            // Annotations for 2032.95 peak and today
+            annotations: [
+                // 2032.95 Major Peak - all charts
                 {
-                    label: 'Main Wave (8.6y)',
-                    data: mainWaveData,
-                    borderColor: isDark ? '#10b981' : '#059669',
-                    backgroundColor: gradientFill,
-                    borderWidth: 2.5,
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: isDark ? '#10b981' : '#059669',
-                    pointHoverBorderColor: 'white',
-                    pointHoverBorderWidth: 2
+                    x: GRAND_PUBLIC_PEAK, y: 1, xref: 'x', yref: 'y domain',
+                    text: '★ 2032.95 MAJOR PEAK', showarrow: true, arrowhead: 2,
+                    arrowcolor: '#a855f7', font: { color: '#a855f7', size: 11, family: 'bold' },
+                    ax: 0, ay: -40, bgcolor: isDark ? '#1f2937' : '#ffffff',
+                    bordercolor: '#a855f7', borderwidth: 1, borderpad: 4
                 },
                 {
-                    label: 'Half Wave (4.3y)',
-                    data: halfWaveData,
-                    borderColor: isDark ? 'rgba(59, 130, 246, 0.6)' : 'rgba(37, 99, 235, 0.6)',
-                    backgroundColor: 'transparent',
-                    borderWidth: 1.5,
-                    borderDash: [8, 4],
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4,
-                    pointHoverBackgroundColor: isDark ? '#3b82f6' : '#2563eb',
-                    pointHoverBorderColor: 'white',
-                    pointHoverBorderWidth: 2
+                    x: GRAND_PUBLIC_PEAK, y: 1, xref: 'x2', yref: 'y2 domain',
+                    text: '★ 2032.95', showarrow: true, arrowhead: 2,
+                    arrowcolor: '#a855f7', font: { color: '#a855f7', size: 10 },
+                    ax: 0, ay: -30, bgcolor: isDark ? '#1f2937' : '#ffffff',
+                    bordercolor: '#a855f7', borderwidth: 1, borderpad: 3
                 },
-            ]
+                {
+                    x: GRAND_PUBLIC_PEAK, y: 1, xref: 'x3', yref: 'y3 domain',
+                    text: '★ 2032.95', showarrow: true, arrowhead: 2,
+                    arrowcolor: '#a855f7', font: { color: '#a855f7', size: 10 },
+                    ax: 0, ay: -30, bgcolor: isDark ? '#1f2937' : '#ffffff',
+                    bordercolor: '#a855f7', borderwidth: 1, borderpad: 3
+                }
+            ],
+
+            // Shapes for 51.6y shading and 2032.95 lines
+            shapes: [
+                // 51.6y Private wave shading on middle chart
+                {
+                    type: 'rect', xref: 'x2', yref: 'y2 domain',
+                    x0: PRIVATE_51_6_START, x1: 2037.5, y0: 0, y1: 1,
+                    fillcolor: 'rgba(255,165,0,0.15)', line: { width: 0 }, layer: 'below'
+                },
+                // 2032.95 vertical line on all charts
+                {
+                    type: 'line', xref: 'x', yref: 'y domain',
+                    x0: GRAND_PUBLIC_PEAK, x1: GRAND_PUBLIC_PEAK, y0: 0, y1: 1,
+                    line: { color: '#a855f7', width: 2, dash: 'dash' }
+                },
+                {
+                    type: 'line', xref: 'x2', yref: 'y2 domain',
+                    x0: GRAND_PUBLIC_PEAK, x1: GRAND_PUBLIC_PEAK, y0: 0, y1: 1,
+                    line: { color: '#a855f7', width: 2, dash: 'dash' }
+                },
+                {
+                    type: 'line', xref: 'x3', yref: 'y3 domain',
+                    x0: GRAND_PUBLIC_PEAK, x1: GRAND_PUBLIC_PEAK, y0: 0, y1: 1,
+                    line: { color: '#a855f7', width: 3, dash: 'dash' }
+                },
+                // Zero lines
+                {
+                    type: 'line', xref: 'x', yref: 'y',
+                    x0: startYear, x1: endYear, y0: 0, y1: 0,
+                    line: { color: gridColor, width: 1 }
+                },
+                {
+                    type: 'line', xref: 'x2', yref: 'y2',
+                    x0: startYear, x1: endYear, y0: 0, y1: 0,
+                    line: { color: gridColor, width: 1 }
+                },
+                {
+                    type: 'line', xref: 'x3', yref: 'y3',
+                    x0: startYear, x1: endYear, y0: 0, y1: 0,
+                    line: { color: gridColor, width: 1 }
+                }
+            ],
+
+            // Subplot configuration
+            xaxis: {
+                title: '', range: [startYear, endYear],
+                gridcolor: gridColor, zeroline: false,
+                tickfont: { size: 11 }
+            },
+            xaxis2: {
+                title: '', range: [startYear, endYear],
+                gridcolor: gridColor, zeroline: false,
+                tickfont: { size: 11 }
+            },
+            xaxis3: {
+                title: 'Decimal Year', range: [startYear, endYear],
+                gridcolor: gridColor, zeroline: false,
+                tickfont: { size: 11 }
+            },
+            yaxis: {
+                title: '8.6y Confidence', gridcolor: gridColor, zeroline: false,
+                tickfont: { size: 11 }
+            },
+            yaxis2: {
+                title: '51.6y Trend', gridcolor: gridColor, zeroline: false,
+                tickfont: { size: 11 }
+            },
+            yaxis3: {
+                title: '309.6y Grand Cycle', gridcolor: gridColor, zeroline: false,
+                tickfont: { size: 11 }
+            }
         },
-        options: {
+        config: {
             responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            scales: {
-                x: {
-                    type: 'linear',
-                    title: {
-                        display: true,
-                        text: 'Year',
-                        color: textColor,
-                        font: { size: 13, weight: 'bold' }
-                    },
-                    grid: {
-                        color: gridColor
-                    },
-                    ticks: {
-                        color: textColor,
-                        stepSize: 1,
-                        callback: function(value) {
-                            return value.toFixed(0);
-                        }
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'ECM Value (Public ↑ / Private ↓)',
-                        color: textColor,
-                        font: { size: 13, weight: 'bold' }
-                    },
-                    grid: {
-                        color: function(context) {
-                            if (context.tick.value === 0) {
-                                return zeroLineColor;
-                            }
-                            return gridColor;
-                        }
-                    },
-                    ticks: {
-                        color: textColor
-                    },
-                    min: -1.5,
-                    max: 1.5
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: {
-                        color: textColor,
-                        font: { size: 12 }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-                    titleColor: isDark ? '#f3f4f6' : '#111827',
-                    bodyColor: isDark ? '#d1d5db' : '#374151',
-                    borderColor: isDark ? '#4b5563' : '#d1d5db',
-                    borderWidth: 1,
-                    padding: 12,
-                    displayColors: true,
-                    callbacks: {
-                        title: function(context) {
-                            const year = context[0].parsed.x;
-                            return `Year: ${year.toFixed(2)}`;
-                        },
-                        label: function(context) {
-                            const value = context.parsed.y;
-                            const mood = value > 0 ? '🔵 Public Wave' : value < 0 ? '🔴 Private Wave' : '⚪ Neutral';
-                            return `ECM: ${value.toFixed(3)} (${mood})`;
-                        }
-                    }
-                },
-                annotation: {
-                    annotations: annotations
-                }
-            }
+            scrollZoom: true,
+            displayModeBar: true,
+            modeBarButtonsToAdd: ['pan2d', 'zoom2d', 'resetScale2d']
+        }
+    };
+
+    // Use subplot domains
+    fig.layout.xaxis.domain = [0, 1];
+    fig.layout.xaxis2 = { ...fig.layout.xaxis2, domain: [0, 1], anchor: 'y2' };
+    fig.layout.xaxis3 = { ...fig.layout.xaxis3, domain: [0, 1], anchor: 'y3' };
+    fig.layout.yaxis.domain = [0.68, 1];
+    fig.layout.yaxis2.domain = [0.34, 0.66];
+    fig.layout.yaxis3.domain = [0, 0.32];
+
+    // Assign traces to subplots
+    fig.data[0].xaxis = 'x';
+    fig.data[0].yaxis = 'y';
+    fig.data[1].xaxis = 'x';
+    fig.data[1].yaxis = 'y';
+    fig.data[2].xaxis = 'x';
+    fig.data[2].yaxis = 'y';
+    fig.data[3].xaxis = 'x2';
+    fig.data[3].yaxis = 'y2';
+    fig.data[4].xaxis = 'x3';
+    fig.data[4].yaxis = 'y3';
+
+    // Add subplot titles as annotations
+    fig.layout.annotations = fig.layout.annotations || [];
+    fig.layout.annotations.push(
+        { text: '<b>最內層 — 8.6年子波 (Short-term Confidence Rhythm)</b>', x: 0.5, y: 1.02, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 14, color: textColor } },
+        { text: '<b>中間層 — 51.6年長波 (Private Assets Favored)</b>', x: 0.5, y: 0.66, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 14, color: textColor } },
+        { text: '<b>最外層 — 309.6年巨波 (Grand Public Peak at 2032.95)</b>', x: 0.5, y: 0.32, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 14, color: textColor } }
+    );
+
+    Plotly.newPlot('ecmChart', fig.data, fig.layout, fig.config);
+
+    // Sync zoom/pan across all 3 x-axes
+    const chartDiv = document.getElementById('ecmChart');
+    chartDiv.on('plotly_relayout', function(eventdata) {
+        if (eventdata['xaxis.range[0]'] !== undefined) {
+            const update = {
+                'xaxis.range': [eventdata['xaxis.range[0]'], eventdata['xaxis.range[1]']],
+                'xaxis2.range': [eventdata['xaxis.range[0]'], eventdata['xaxis.range[1]']],
+                'xaxis3.range': [eventdata['xaxis.range[0]'], eventdata['xaxis.range[1]']]
+            };
+            Plotly.relayout('ecmChart', update);
         }
     });
 }
 
+// ==================== Update Turning Points Table ====================
 function updateTurningPointsTable(startYear, endYear) {
     const points = generateTurningPoints(startYear, endYear);
-    const today = new Date();
-    const todayDecimal = dateToDecimal(today);
-    
-    const upcoming = points.filter(p => p.decimalYear >= todayDecimal).slice(0, 20);
-    
+    const today = dateToDecimal(new Date());
+    const upcoming = points.filter(p => p.decimalYear >= today).slice(0, 20);
+
     const tbody = document.getElementById('turningPointsTable');
     tbody.innerHTML = upcoming.map(p => `
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -650,65 +537,55 @@ function updateTurningPointsTable(startYear, endYear) {
                 ${p.decimalYear}
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    p.cycle === 'main' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
-                    'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                }">
-                    ${p.type}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${p.cycleType.includes('Main') ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'}">
+                    ${p.cycleType}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    p.waveType === 'Private' ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' :
-                    'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                }">
-                    ${p.waveType} Wave
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${p.isPrivate ? 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200' : 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'}">
+                    ${p.isPrivate ? 'Private' : 'Public'} Wave
                 </span>
             </td>
         </tr>
     `).join('');
 }
 
+// ==================== Update Events List ====================
 function updateEventsList() {
     const container = document.getElementById('eventsList');
     container.innerHTML = HISTORICAL_EVENTS.map(e => `
-        <div class="p-4 rounded-lg border ${
-            e.color === '#ef4444' ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' :
-            e.color === '#22c55e' ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20' :
-            'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20'
-        }">
-            <div class="font-medium ${
-                e.color === '#ef4444' ? 'text-red-800 dark:text-red-200' :
-                e.color === '#22c55e' ? 'text-green-800 dark:text-green-200' :
-                'text-yellow-800 dark:text-yellow-200'
-            }">${e.name}</div>
+        <div class="p-4 rounded-lg border ${e.color === '#ef4444' ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20' : 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20'}">
+            <div class="font-medium ${e.color === '#ef4444' ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}">${e.name}</div>
             <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">${e.date}</div>
         </div>
     `).join('');
 }
 
+// ==================== Main Update ====================
 function updateChart() {
     const startYear = parseInt(document.getElementById('startYear').value);
     const endYear = parseInt(document.getElementById('endYear').value);
-    
+
     if (startYear >= endYear) {
         alert('End year must be greater than start year');
         return;
     }
-    
+
     createChart(startYear, endYear);
     updateTurningPointsTable(startYear, endYear);
 }
 
+// ==================== Init ====================
 document.addEventListener('DOMContentLoaded', function() {
     updateChart();
     updateEventsList();
-    
+
     ['showMainCycle', 'showHalfCycle', 'showEvents'].forEach(id => {
         document.getElementById(id).addEventListener('change', updateChart);
     });
 });
 
+// Re-render on theme change
 document.getElementById('theme-toggle')?.addEventListener('click', function() {
     setTimeout(updateChart, 300);
 });
