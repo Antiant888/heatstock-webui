@@ -69,32 +69,35 @@ def _fetch_page(page: int) -> dict:
 def scrape_hkex_news(engine):
     """
     Fetch ALL HKEX filings from the public JSON API (all pages) and upsert
-    into hkex_news.  Page 1 carries ``maxNumOfFile`` which tells us how many
-    pages exist.  Each page returns up to 500 records.
-    Uses raw SQL INSERT ... ON DUPLICATE KEY UPDATE for reliability.
+    into hkex_news.
+
+    Strategy: page 1's ``maxNumOfFile`` only reflects recently-generated pages
+    and under-counts older historical pages.  Instead we loop pages 1, 2, 3 …
+    and stop as soon as a page returns an empty ``newsInfoLst`` or fails to
+    parse (HKEX returns an empty body for out-of-range pages).
 
     Returns:
         dict: {"inserted": N, "updated": N, "total": N}
     """
-    # ── Page 1: discover max pages ──────────────────────────────
-    first_page_data = _fetch_page(1)
-    max_pages = int(first_page_data.get("maxNumOfFile") or 1)
-    logger.info(f"HKEX API reports {max_pages} page(s)")
-
-    news_list = first_page_data.get("newsInfoLst", [])
-
-    # ── Pages 2 … max_pages ─────────────────────────────────────
-    for page in range(2, max_pages + 1):
+    news_list = []
+    page = 1
+    while True:
         try:
             data = _fetch_page(page)
             page_items = data.get("newsInfoLst", [])
-            logger.info(f"  Page {page}: {len(page_items)} filings")
-            news_list.extend(page_items)
         except Exception as exc:
-            logger.warning(f"  Page {page} failed, skipping: {exc}")
-            continue
+            logger.info(f"  Page {page} returned invalid/empty response – stopping. ({exc})")
+            break
 
-    logger.info(f"Total filings fetched across all pages: {len(news_list)}")
+        if not page_items:
+            logger.info(f"  Page {page} is empty – stopping.")
+            break
+
+        logger.info(f"  Page {page}: {len(page_items)} filings")
+        news_list.extend(page_items)
+        page += 1
+
+    logger.info(f"Total filings fetched across {page - 1} page(s): {len(news_list)}")
 
     if not news_list:
         logger.warning("Empty newsInfoLst returned – nothing to insert")
