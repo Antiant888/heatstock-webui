@@ -16,7 +16,9 @@ import time
 import json
 import logging
 import requests
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+HKT = timezone(timedelta(hours=8))
 from sqlalchemy import inspect, text
 from database import Base, HKEXNews
 
@@ -104,7 +106,7 @@ def scrape_hkex_news(engine):
         return {"inserted": 0, "updated": 0, "total": 0}
 
     # Build rows to upsert (deduplicate by news_id, last occurrence wins)
-    now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.now(HKT).strftime("%Y-%m-%d %H:%M:%S")  # HKT (UTC+8)
     rows_by_id: dict = {}
     for item in news_list:
         news_id = item.get("newsId")
@@ -157,16 +159,21 @@ def scrape_hkex_news(engine):
 
     with engine.begin() as conn:
         result = conn.execute(upsert_sql, rows)
-        # MySQL rowcount: 1 = inserted, 2 = updated, 0 = unchanged
+        # MySQL ON DUPLICATE KEY UPDATE affected_rows:
+        #   1 per new insert, 2 per updated row, 0 per unchanged row
         rc = result.rowcount
-        inserted = sum(1 for _ in range(len(rows)))  # upper bound; exact split below
-        # MySQL reports 1 per insert, 2 per update, 0 per no-change
-        # Use affected_rows heuristic when available
-        inserted = rc if rc <= len(rows) else len(rows)
-        updated  = rc - len(rows) if rc > len(rows) else 0
+
+    total_rows = len(rows)
+    # Best-effort split: inserts contribute 1, updates contribute 2
+    # updated  = rc - total_rows  (each update adds an extra 1 vs insert)
+    # inserted = total_rows - updated - unchanged (not directly measurable)
+    updated   = max(rc - total_rows, 0)          # rows where values changed
+    new_rows  = max(total_rows - (rc - updated) - updated, 0)  # simplification
+    unchanged = total_rows - rc if rc <= total_rows else 0
 
     logger.info(
-        f"Scrape complete: ~{inserted} new/unchanged, ~{updated} updated "
-        f"(MySQL affected_rows={rc}, total_fetched={len(news_list)})"
+        f"Scrape complete: {total_rows} unique rows processed "
+        f"(MySQL affected_rows={rc} → ~{updated} updated, ~{unchanged} unchanged) "
+        f"| total fetched across all pages={len(news_list)}"
     )
-    return {"inserted": inserted, "updated": updated, "total": len(news_list)}
+    return {"inserted": total_rows - updated - unchanged, "updated": updated, "total": total_rows}
