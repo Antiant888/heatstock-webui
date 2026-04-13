@@ -235,11 +235,13 @@ function renderFilings(data) {
     data.items.forEach(item => {
         // Stocks badges
         const stockBadges = (item.stocks || []).map(s => {
-            const label = s.sc ? `${s.sc}` : '';
-            const title = s.sn ? ` title="${escapeHtml(s.sn)}"` : '';
-            return label
-                ? `<span${title} class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium px-1.5 py-0.5 rounded mr-1 mb-1 cursor-default">${escapeHtml(label)}</span>`
+            if (!s.sc) return '';
+            const name = s.sn
+                ? `<span class="block font-normal leading-tight" style="font-size:0.65rem;opacity:0.75">${escapeHtml(s.sn)}</span>`
                 : '';
+            return `<span class="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium px-1.5 py-0.5 rounded mr-1 mb-1 cursor-default leading-tight">`
+                 + `<span class="block">${escapeHtml(s.sc)}</span>${name}`
+                 + `</span>`;
         }).join('');
 
         // File format badge colour
