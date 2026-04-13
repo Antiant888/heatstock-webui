@@ -100,14 +100,14 @@ def scrape_hkex_news(engine):
         logger.warning("Empty newsInfoLst returned – nothing to insert")
         return {"inserted": 0, "updated": 0, "total": 0}
 
-    # Build rows to upsert
+    # Build rows to upsert (deduplicate by news_id, last occurrence wins)
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-    rows = []
+    rows_by_id: dict = {}
     for item in news_list:
         news_id = item.get("newsId")
         if not news_id:
             continue
-        rows.append({
+        rows_by_id[int(news_id)] = {
             "news_id":   int(news_id),
             "title":     (item.get("title") or "")[:500],
             "l_txt":     (item.get("lTxt")  or "")[:1000],
@@ -122,7 +122,10 @@ def scrape_hkex_news(engine):
             "t1_code":   (item.get("t1Code")  or "")[:20],
             "t2_code":   (item.get("t2Code")  or "")[:100],
             "scraped_at": now_str,
-        })
+        }
+    rows = list(rows_by_id.values())
+    logger.info(f"After deduplication: {len(rows)} unique news_id(s) "
+                f"(dropped {len(news_list) - len(rows)} duplicates)")
 
     logger.info(f"Upserting {len(rows)} rows into hkex_news …")
 
