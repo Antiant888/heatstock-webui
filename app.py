@@ -274,7 +274,7 @@ async def api_hkex_news(
 
         rows = (
             query
-            .order_by(desc(HKEXNews.id))
+            .order_by(desc(HKEXNews.news_id))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()

@@ -211,7 +211,7 @@ function renderFilings(data) {
         const catShort = (item.s_txt || item.l_txt || '').split(' - ')[0].trim();
 
         tr.innerHTML = `
-            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${escapeHtml(item.rel_time || '')}</td>
+            <td class="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">${formatRelTime(item.rel_time)}</td>
             <td class="px-4 py-3">${stockBadges || '<span class="text-gray-400 text-xs">—</span>'}</td>
             <td class="px-4 py-3">
                 <span class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2" title="${escapeHtml(item.l_txt || '')}">${escapeHtml(catShort)}</span>
@@ -313,6 +313,17 @@ function showToast(el, msg, classes) {
 }
 
 // ── Utils ──────────────────────────────────────────────────────
+// Format "13/04/2026 18:39" → date on first line, time bold on second
+function formatRelTime(relTime) {
+    if (!relTime) return '<span class="text-gray-400">—</span>';
+    const parts = relTime.trim().split(' ');
+    if (parts.length >= 2) {
+        return `<span class="block text-gray-400 dark:text-gray-500">${escapeHtml(parts[0])}</span>`
+             + `<span class="block font-medium text-gray-700 dark:text-gray-300">${escapeHtml(parts[1])}</span>`;
+    }
+    return escapeHtml(relTime);
+}
+
 function escapeHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;')
