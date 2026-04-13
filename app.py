@@ -249,6 +249,17 @@ async def api_hkex_scrape():
         return {"status": "error", "message": str(exc)}
 
 
+@app.get("/api/hkex/last-scrape")
+async def api_hkex_last_scrape():
+    """Return the most recent scraped_at timestamp from hkex_news"""
+    session = get_session(engine)
+    try:
+        result = session.query(func.max(HKEXNews.scraped_at)).scalar()
+        return {"last_scraped": str(result) if result else None}
+    finally:
+        session.close()
+
+
 @app.get("/api/hkex/news")
 async def api_hkex_news(
     page: int = Query(1, ge=1),

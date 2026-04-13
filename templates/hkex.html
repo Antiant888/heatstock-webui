@@ -15,16 +15,21 @@
                     Click <strong>Scrape Now</strong> to fetch the latest batch.
                 </p>
             </div>
-            <div class="flex items-center gap-3">
-                <span id="scrapeStatus" class="text-sm text-gray-500 dark:text-gray-400 hidden"></span>
-                <button id="scrapeBtn" onclick="triggerScrape()"
-                    class="inline-flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                    <svg id="scrapeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Scrape Now
-                </button>
+            <div class="flex flex-col items-end gap-1">
+                <div class="flex items-center gap-3">
+                    <span id="scrapeStatus" class="text-sm text-gray-500 dark:text-gray-400 hidden"></span>
+                    <button id="scrapeBtn" onclick="triggerScrape()"
+                        class="inline-flex items-center gap-2 px-5 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md shadow transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <svg id="scrapeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Scrape Now
+                    </button>
+                </div>
+                <span id="lastScrapedLabel" class="hidden text-xs text-gray-400 dark:text-gray-500">
+                    Last scraped: <span id="lastScrapedTime"></span>
+                </span>
             </div>
         </div>
 
@@ -93,9 +98,9 @@
             <!-- Mobile card list (hidden on md+) -->
             <div id="filingsCards" class="md:hidden divide-y divide-gray-200 dark:divide-gray-700"></div>
             <!-- Desktop table (hidden below md) -->
-            <div class="hidden md:block overflow-x-auto">
+            <div class="hidden md:block overflow-x-auto overflow-y-auto max-h-[65vh]">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700" id="filingsTable">
-                    <thead class="bg-gray-50 dark:bg-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-32">Time (HKT)</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-28">Stock(s)</th>
@@ -149,6 +154,7 @@ let activeKeyword = null;
 // ── Bootstrap ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     loadFilings();
+    loadLastScraped();
 
     // Debounced live search
     ['searchInput', 'stockFilter'].forEach(id => {
@@ -161,6 +167,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+// ── Last scraped timestamp ───────────────────────────────────────
+async function loadLastScraped() {
+    try {
+        const res  = await fetch('/api/hkex/last-scrape');
+        const data = await res.json();
+        updateLastScraped(data.last_scraped);
+    } catch (_) {}
+}
+function updateLastScraped(ts) {
+    if (!ts) return;
+    // ts from DB: "2026-04-13 18:39:00" or ISO string
+    const display = String(ts).replace('T', ' ').substring(0, 16);
+    document.getElementById('lastScrapedTime').textContent = display;
+    document.getElementById('lastScrapedLabel').classList.remove('hidden');
+}
 
 // ── Data loading ───────────────────────────────────────────────
 async function loadFilings() {
@@ -359,6 +381,7 @@ async function triggerScrape() {
             // Reload the table to show new data
             currentPage = 1;
             loadFilings();
+            updateLastScraped(new Date().toLocaleString('sv-SE', {timeZone: 'Asia/Hong_Kong'}).substring(0, 16));
         } else {
             showToast(toast,
                 `✗ Scrape failed: ${data.message || 'unknown error'}`,
