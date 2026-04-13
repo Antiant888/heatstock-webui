@@ -1,0 +1,25 @@
+# Dockerfile for the standalone HKEX scraper worker service.
+# Deploy this as a separate Railway service alongside the web UI.
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# System deps (gcc needed by some pip packages)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Only the files needed by the scraper – no templates, no static assets
+COPY database.py .
+COPY scraper.py .
+COPY scraper_worker.py .
+
+CMD ["python", "scraper_worker.py"]
