@@ -59,6 +59,22 @@
                 </button>
             </div>
         </div>
+        <!-- Preset keyword quick-filter buttons -->
+        <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quick Keywords</label>
+            <div class="flex flex-wrap gap-2" id="presetBtns">
+                <button onclick="togglePreset(this)" data-keyword="分拆"
+                    class="preset-btn px-3 py-1 rounded-full text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:border-green-500 hover:text-green-600 transition-colors duration-150">分拆</button>
+                <button onclick="togglePreset(this)" data-keyword="供股"
+                    class="preset-btn px-3 py-1 rounded-full text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:border-green-500 hover:text-green-600 transition-colors duration-150">供股</button>
+                <button onclick="togglePreset(this)" data-keyword="上市文件"
+                    class="preset-btn px-3 py-1 rounded-full text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:border-green-500 hover:text-green-600 transition-colors duration-150">上市文件</button>
+                <button onclick="togglePreset(this)" data-keyword="回購"
+                    class="preset-btn px-3 py-1 rounded-full text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:border-green-500 hover:text-green-600 transition-colors duration-150">回購</button>
+                <button onclick="togglePreset(this)" data-keyword="業績"
+                    class="preset-btn px-3 py-1 rounded-full text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:border-green-500 hover:text-green-600 transition-colors duration-150">業績</button>
+            </div>
+        </div>
     </div>
 
     <!-- Filings Table -->
@@ -123,6 +139,7 @@ const HKEX_BASE = 'https://www1.hkexnews.hk';
 let currentPage = 1;
 const pageSize = 25;
 let debounceTimer = null;
+let activeKeyword = null;
 
 // ── Bootstrap ──────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -149,8 +166,9 @@ async function loadFilings() {
         page:      currentPage,
         page_size: pageSize,
     });
-    if (search) params.append('search', search);
-    if (stock)  params.append('stock',  stock);
+    if (search)        params.append('search',  search);
+    if (stock)         params.append('stock',   stock);
+    if (activeKeyword) params.append('keyword', activeKeyword);
 
     document.getElementById('loadingRow').classList.remove('hidden');
     document.getElementById('filingsTable').classList.add('hidden');
@@ -261,8 +279,31 @@ function applyFilters() {
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('stockFilter').value = '';
+    activeKeyword = null;
+    document.querySelectorAll('.preset-btn').forEach(b => deactivatePreset(b));
     currentPage = 1;
     loadFilings();
+}
+
+// ── Preset keyword toggles ─────────────────────────────────────
+function togglePreset(btn) {
+    const keyword = btn.dataset.keyword;
+    const isActive = btn.classList.contains('active-preset');
+    // Deactivate all first
+    document.querySelectorAll('.preset-btn').forEach(b => deactivatePreset(b));
+    if (isActive) {
+        activeKeyword = null;
+    } else {
+        activeKeyword = keyword;
+        btn.classList.add('active-preset', 'bg-green-100', 'dark:bg-green-900',
+            'border-green-500', '!text-green-700', 'font-semibold');
+    }
+    currentPage = 1;
+    loadFilings();
+}
+function deactivatePreset(btn) {
+    btn.classList.remove('active-preset', 'bg-green-100', 'dark:bg-green-900',
+        'border-green-500', '!text-green-700', 'font-semibold');
 }
 
 // ── Scraper trigger ────────────────────────────────────────────

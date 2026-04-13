@@ -255,8 +255,9 @@ async def api_hkex_news(
     page_size: int = Query(20, ge=1, le=100),
     search: str = Query(None),
     stock: str = Query(None),
+    keyword: str = Query(None),
 ):
-    """Paginated HKEX filings with optional search and stock-code filter"""
+    """Paginated HKEX filings with optional search, stock-code, and keyword preset filter"""
     session = get_session(engine)
     try:
         query = session.query(HKEXNews)
@@ -265,6 +266,12 @@ async def api_hkex_news(
             query = query.filter(
                 (HKEXNews.title.contains(search)) |
                 (HKEXNews.l_txt.contains(search))
+            )
+
+        if keyword:
+            query = query.filter(
+                (HKEXNews.title.contains(keyword)) |
+                (HKEXNews.l_txt.contains(keyword))
             )
 
         if stock:
