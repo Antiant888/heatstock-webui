@@ -12,7 +12,7 @@ import os
 import logging
 import json
 from datetime import datetime, timezone, timedelta
-from sqlalchemy import create_engine, Column, String, BigInteger, Text, Boolean, DateTime, func
+from sqlalchemy import create_engine, Column, String, BigInteger, Integer, Text, Boolean, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -48,6 +48,27 @@ class HKStockLive(Base):
     close_comment = Column(Boolean, nullable=True)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+class HKEXNews(Base):
+    """SQLAlchemy model for HKEX news filings from hkexnews.hk"""
+    __tablename__ = 'hkex_news'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    news_id = Column(Integer, unique=True, nullable=False, index=True)
+    title = Column(Text, nullable=True)
+    l_txt = Column(Text, nullable=True)       # Long category label
+    s_txt = Column(Text, nullable=True)       # Short category label
+    ext = Column(String(10), nullable=True)   # File extension (pdf, htm, ...)
+    size_kb = Column(String(20), nullable=True)
+    web_path = Column(Text, nullable=True)    # Relative path; prepend https://www1.hkexnews.hk
+    market = Column(String(10), nullable=True)
+    multi = Column(Integer, nullable=True)
+    stocks = Column(Text, nullable=True)      # JSON array [{sc, sn}, ...]
+    rel_time = Column(String(30), nullable=True)
+    t1_code = Column(String(20), nullable=True)
+    t2_code = Column(String(100), nullable=True)
+    scraped_at = Column(DateTime, default=func.now())
+
 
 # ────────────────────────────────────────────────
 # Database Connection

@@ -20,12 +20,14 @@ from database import (
     create_database_engine,
     get_session,
     HKStockLive,
+    HKEXNews,
     timestamp_to_hkt,
     safe_json_loads,
     extract_stock_codes,
     extract_info_names,
     extract_stock_names
 )
+from scraper import scrape_hkex_news, init_hkex_table
 
 # Initialize FastAPI app
 app = FastAPI(title="HK Stock News Dashboard", version="1.0.0")
@@ -50,6 +52,7 @@ async def startup_event():
     """Initialize database connection on startup"""
     global engine
     engine = create_database_engine()
+    init_hkex_table(engine)
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -223,6 +226,88 @@ async def ecm_page(request: Request):
     template = jinja_env.get_template("ecm.html")
     html_content = template.render()
     return HTMLResponse(content=html_content)
+
+@app.get("/hkex", response_class=HTMLResponse)
+async def hkex_page(request: Request):
+    """HKEX Filings page"""
+    template = jinja_env.get_template("hkex.html")
+    html_content = template.render(active_page='hkex')
+    return HTMLResponse(content=html_content)
+
+
+# ────────────────────────────────────────────────
+# HKEX API Routes
+# ────────────────────────────────────────────────
+
+@app.post("/api/hkex/scrape")
+async def api_hkex_scrape():
+    """Trigger HKEX filings scraper manually"""
+    try:
+        result = scrape_hkex_news(engine)
+        return {"status": "ok", **result}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+
+@app.get("/api/hkex/news")
+async def api_hkex_news(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: str = Query(None),
+    stock: str = Query(None),
+):
+    """Paginated HKEX filings with optional search and stock-code filter"""
+    session = get_session(engine)
+    try:
+        query = session.query(HKEXNews)
+
+        if search:
+            query = query.filter(
+                (HKEXNews.title.contains(search)) |
+                (HKEXNews.l_txt.contains(search))
+            )
+
+        if stock:
+            query = query.filter(HKEXNews.stocks.contains(stock))
+
+        total = query.count()
+
+        rows = (
+            query
+            .order_by(desc(HKEXNews.id))
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+
+        items = []
+        for row in rows:
+            items.append({
+                "id":         row.id,
+                "news_id":    row.news_id,
+                "title":      row.title or "",
+                "l_txt":      row.l_txt or "",
+                "s_txt":      row.s_txt or "",
+                "ext":        row.ext or "",
+                "size_kb":    row.size_kb or "",
+                "web_path":   row.web_path or "",
+                "market":     row.market or "",
+                "stocks":     json.loads(row.stocks) if row.stocks else [],
+                "rel_time":   row.rel_time or "",
+                "t1_code":    row.t1_code or "",
+                "t2_code":    row.t2_code or "",
+                "scraped_at": row.scraped_at.isoformat() if row.scraped_at else "",
+            })
+
+        return {
+            "items":       items,
+            "total":       total,
+            "page":        page,
+            "page_size":   page_size,
+            "total_pages": (total + page_size - 1) // page_size,
+        }
+    finally:
+        session.close()
 
 # ────────────────────────────────────────────────
 # JSON API Routes
