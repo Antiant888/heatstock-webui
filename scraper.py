@@ -5,8 +5,9 @@ HKEX News Scraper Module
 Fetches the latest HK Exchange filings from the public HKEX JSON API
 and upserts them into the hkex_news MySQL table.
 
-API endpoint:
-  https://www1.hkexnews.hk/ncms/json/eds/lcisehk7relsdc_1.json?_={epoch_ms}
+API endpoint (paginated):
+  https://www1.hkexnews.hk/ncms/json/eds/lcisehk7relsdc_{page}.json?_={epoch_ms}
+  Page 1 returns ``maxNumOfFile`` indicating the total number of pages.
 
 Author: jasperchan
 """
@@ -21,7 +22,7 @@ from database import Base, HKEXNews
 
 logger = logging.getLogger(__name__)
 
-HKEX_API_URL = "https://www1.hkexnews.hk/ncms/json/eds/lcisehk7relsdc_1.json"
+HKEX_API_URL_TEMPLATE = "https://www1.hkexnews.hk/ncms/json/eds/lcisehk7relsdc_{page}.json"
 HKEX_BASE_URL = "https://www1.hkexnews.hk"
 
 
@@ -43,18 +44,11 @@ def init_hkex_table(engine):
 # Scraper
 # ────────────────────────────────────────────────────────────────
 
-def scrape_hkex_news(engine):
-    """
-    Fetch HKEX filings from the public JSON API and upsert into hkex_news.
-    Uses raw SQL INSERT ... ON DUPLICATE KEY UPDATE for reliability.
-
-    Returns:
-        dict: {"inserted": N, "updated": N, "total": N}
-    """
+def _fetch_page(page: int) -> dict:
+    """Fetch a single HKEX API page and return the parsed JSON."""
     epoch_ms = int(time.time() * 1000)
-    url = f"{HKEX_API_URL}?_={epoch_ms}"
-
-    logger.info(f"Fetching HKEX filings from {url}")
+    url = f"{HKEX_API_URL_TEMPLATE.format(page=page)}?_={epoch_ms}"
+    logger.info(f"Fetching HKEX page {page}: {url}")
     resp = requests.get(
         url,
         timeout=20,
@@ -69,10 +63,38 @@ def scrape_hkex_news(engine):
         },
     )
     resp.raise_for_status()
-    data = resp.json()
+    return resp.json()
 
-    news_list = data.get("newsInfoLst", [])
-    logger.info(f"Received {len(news_list)} filings from HKEX API")
+
+def scrape_hkex_news(engine):
+    """
+    Fetch ALL HKEX filings from the public JSON API (all pages) and upsert
+    into hkex_news.  Page 1 carries ``maxNumOfFile`` which tells us how many
+    pages exist.  Each page returns up to 500 records.
+    Uses raw SQL INSERT ... ON DUPLICATE KEY UPDATE for reliability.
+
+    Returns:
+        dict: {"inserted": N, "updated": N, "total": N}
+    """
+    # ── Page 1: discover max pages ──────────────────────────────
+    first_page_data = _fetch_page(1)
+    max_pages = int(first_page_data.get("maxNumOfFile") or 1)
+    logger.info(f"HKEX API reports {max_pages} page(s)")
+
+    news_list = first_page_data.get("newsInfoLst", [])
+
+    # ── Pages 2 … max_pages ─────────────────────────────────────
+    for page in range(2, max_pages + 1):
+        try:
+            data = _fetch_page(page)
+            page_items = data.get("newsInfoLst", [])
+            logger.info(f"  Page {page}: {len(page_items)} filings")
+            news_list.extend(page_items)
+        except Exception as exc:
+            logger.warning(f"  Page {page} failed, skipping: {exc}")
+            continue
+
+    logger.info(f"Total filings fetched across all pages: {len(news_list)}")
 
     if not news_list:
         logger.warning("Empty newsInfoLst returned – nothing to insert")
