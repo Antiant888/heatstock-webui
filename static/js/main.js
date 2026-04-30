@@ -48,19 +48,47 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const mobileMenuButton = document.querySelector('.mobile-menu-button');
     const mobileMenu = document.querySelector('.mobile-menu');
+    const mobileMenuClose = document.querySelector('.mobile-menu-close');
+
+    function openMobileMenu() {
+        if (mobileMenu) {
+            mobileMenu.classList.add('active');
+            if (mobileMenuButton) mobileMenuButton.setAttribute('aria-expanded', 'true');
+        }
+    }
+
+    function closeMobileMenu() {
+        if (mobileMenu) {
+            mobileMenu.classList.remove('active');
+            if (mobileMenuButton) mobileMenuButton.setAttribute('aria-expanded', 'false');
+        }
+    }
 
     if (mobileMenuButton && mobileMenu) {
-        mobileMenuButton.addEventListener('click', function() {
-            mobileMenu.classList.toggle('active');
+        mobileMenuButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            mobileMenu.classList.contains('active') ? closeMobileMenu() : openMobileMenu();
+        });
+    }
+
+    if (mobileMenuClose) {
+        mobileMenuClose.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeMobileMenu();
         });
     }
 
     // Close mobile menu when clicking outside
     document.addEventListener('click', function(event) {
         if (!event.target.closest('.mobile-menu') && !event.target.closest('.mobile-menu-button')) {
-            if (mobileMenu) {
-                mobileMenu.classList.remove('active');
-            }
+            closeMobileMenu();
+        }
+    });
+
+    // Close mobile menu on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeMobileMenu();
         }
     });
 });

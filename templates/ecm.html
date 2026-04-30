@@ -46,7 +46,7 @@
 
     <!-- 3 Linked Charts -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
-        <div id="ecmChart" style="width:100%;height:900px;"></div>
+        <div id="ecmChart" style="width:100%;min-height:600px;height:clamp(600px, 80vh, 950px);"></div>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">💡 Drag to pan, scroll to zoom. All 3 charts are synchronized!</p>
     </div>
 
@@ -364,7 +364,7 @@ function createChart(startYear, endYear) {
     const fig = {
         data: [traceInner, traceInnerMarkers, traceEvents, traceMid, traceGrand],
         layout: {
-            height: 900,
+            autosize: true,
             paper_bgcolor: bgColor,
             plot_bgcolor: bgColor,
             font: { color: textColor },
@@ -505,7 +505,7 @@ function createChart(startYear, endYear) {
         { text: '<b>最外層 — 309.6年巨波 (Grand Public Peak at 2032.95)</b>', x: 0.5, y: 0.32, xref: 'paper', yref: 'paper', showarrow: false, font: { size: 14, color: textColor } }
     );
 
-    Plotly.newPlot('ecmChart', fig.data, fig.layout, fig.config);
+    Plotly.newPlot('ecmChart', fig.data, fig.layout, Object.assign({ responsive: true, displayModeBar: true }, fig.config));
 
     // Sync zoom/pan across all 3 x-axes
     const chartDiv = document.getElementById('ecmChart');

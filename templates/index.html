@@ -19,7 +19,12 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Top Stocks</div>
             <div class="mt-2 space-y-1" id="top-stocks-list">
-                <!-- Populated by JavaScript -->
+                <!-- Skeleton loading placeholders -->
+                <div class="animate-pulse space-y-1">
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </div>
             </div>
         </div>
         
@@ -27,7 +32,12 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
             <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Top Categories</div>
             <div class="mt-2 space-y-1" id="top-infos-list">
-                <!-- Populated by JavaScript -->
+                <!-- Skeleton loading placeholders -->
+                <div class="animate-pulse space-y-1">
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-4/5"></div>
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                </div>
             </div>
         </div>
         
@@ -54,13 +64,13 @@
                 </div>
             </div>
             
-            <canvas id="stocksChart" height="200"></canvas>
+            <canvas id="stocksChart" height="200" role="img" aria-label="Bar chart showing top 10 most mentioned stocks"></canvas>
         </div>
         
         <!-- Top Categories Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-300">
             <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Top 10 Info Categories</h3>
-            <canvas id="infosChart" height="200"></canvas>
+            <canvas id="infosChart" height="200" role="img" aria-label="Bar chart showing top 10 most mentioned info categories"></canvas>
         </div>
     </div>
 

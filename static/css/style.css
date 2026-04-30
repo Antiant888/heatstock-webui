@@ -1,7 +1,8 @@
 /* Custom styles for HK Stock News Dashboard */
 
-/* Theme transitions */
-* {
+/* Theme transitions - scoped to specific elements to avoid page-load flicker */
+body, nav, footer, main,
+.bg-white, .dark\:bg-gray-800, .dark\:bg-gray-900 {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -31,18 +32,22 @@ canvas {
     max-width: 100%;
 }
 
-/* Dark mode chart styling */
+/* Dark mode chart styling - subtle, does not muddy colors */
 .dark canvas {
-    filter: brightness(0.9);
+    filter: brightness(0.95) contrast(1.02);
 }
 
-/* Table hover effect */
+/* Table hover effect - use !important to ensure specificity over Tailwind utility classes */
+tbody tr {
+    transition: background-color 0.15s ease;
+}
+
 tbody tr:hover {
-    background-color: #f9fafb;
+    background-color: #f3f4f6 !important;
 }
 
 .dark tbody tr:hover {
-    background-color: #374151;
+    background-color: #374151 !important;
 }
 
 /* Responsive adjustments */
@@ -134,9 +139,13 @@ tbody tr:hover {
     color: #065f46;
 }
 
-/* Button transitions */
-button, a {
-    transition: all 0.2s ease;
+/* Button transitions - scoped to avoid animating every link on page */
+button {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+nav a, footer a {
+    transition: color 0.2s ease;
 }
 
 /* Focus styles for accessibility */
@@ -156,13 +165,12 @@ button:focus, a:focus, input:focus {
     }
 }
 
-/* Active hashtag highlighting */
+/* Active hashtag highlighting - use valid CSS properties (outline box-shadow ring equivalent) */
 .hashtag-active {
-    ring-width: 2px;
-    ring-color: #3b82f6;
-    ring-offset-width: 2px;
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
     transform: scale(1.05);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* Filter indicator animation */

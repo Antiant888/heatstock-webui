@@ -24,12 +24,12 @@
                         <span class="font-semibold text-gray-700 dark:text-gray-200 text-lg">HK Stock News Dashboard</span>
                     </div>
                     <div class="hidden md:flex items-center space-x-1">
-                        <a href="/" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'dashboard' %}text-green-500 border-b-2 border-green-500{% endif %}">Dashboard</a>
-                        <a href="/news" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'news' %}text-green-500 border-b-2 border-green-500{% endif %}">News Feed</a>
-                        <a href="/stocks" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'stocks' %}text-green-500 border-b-2 border-green-500{% endif %}">Stock Frequency</a>
-                        <a href="/infos" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'infos' %}text-green-500 border-b-2 border-green-500{% endif %}">Info Frequency</a>
-                        <a href="/ecm" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'ecm' %}text-green-500 border-b-2 border-green-500{% endif %}">ECM (Pi Cycle)</a>
-                        <a href="/hkex" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'hkex' %}text-green-500 border-b-2 border-green-500{% endif %}">HKEX Filings</a>
+                        <a href="/" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'dashboard' %}text-green-500 border-b-2 border-green-500{% endif %}" {% if active_page == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a>
+                        <a href="/news" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'news' %}text-green-500 border-b-2 border-green-500{% endif %}" {% if active_page == 'news' %}aria-current="page"{% endif %}>News Feed</a>
+                        <a href="/stocks" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'stocks' %}text-green-500 border-b-2 border-green-500{% endif %}" {% if active_page == 'stocks' %}aria-current="page"{% endif %}>Tag Cloud</a>
+                        <a href="/infos" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'infos' %}text-green-500 border-b-2 border-green-500{% endif %}" {% if active_page == 'infos' %}aria-current="page"{% endif %}>Info Frequency</a>
+                        <a href="/ecm" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'ecm' %}text-green-500 border-b-2 border-green-500{% endif %}" {% if active_page == 'ecm' %}aria-current="page"{% endif %}>ECM (Pi Cycle)</a>
+                        <a href="/hkex" class="py-4 px-2 text-gray-500 dark:text-gray-400 hover:text-green-500 transition duration-300 {% if active_page == 'hkex' %}text-green-500 border-b-2 border-green-500{% endif %}" {% if active_page == 'hkex' %}aria-current="page"{% endif %}>HKEX Filings</a>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -44,8 +44,8 @@
                     </button>
                     <!-- Mobile menu button -->
                     <div class="md:hidden flex items-center">
-                        <button class="outline-none mobile-menu-button">
-                            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400 hover:text-green-500" x-show="!showMenu" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                        <button class="outline-none mobile-menu-button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav">
+                            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400 hover:text-green-500" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
                                 <path d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
@@ -54,14 +54,21 @@
             </div>
         </div>
         <!-- Mobile menu -->
-        <div class="hidden mobile-menu dark:bg-gray-800">
-            <ul class="">
-                <li><a href="/" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Dashboard</a></li>
-                <li><a href="/news" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">News Feed</a></li>
-                <li><a href="/stocks" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Stock Frequency</a></li>
-                <li><a href="/infos" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">Info Frequency</a></li>
-                <li><a href="/ecm" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">ECM (Pi Cycle)</a></li>
-                <li><a href="/hkex" class="block text-sm px-2 py-4 hover:bg-green-500 transition duration-300">HKEX Filings</a></li>
+        <div class="hidden mobile-menu dark:bg-gray-800" id="mobile-nav" role="navigation" aria-label="Mobile navigation">
+            <div class="flex justify-end px-4 pt-2">
+                <button class="mobile-menu-close p-1 rounded text-gray-500 dark:text-gray-400 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Close navigation menu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <ul class="pb-2">
+                <li><a href="/" class="block text-sm px-2 py-4 hover:bg-green-500 hover:text-white transition duration-300 {% if active_page == 'dashboard' %}bg-green-500 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}" {% if active_page == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a></li>
+                <li><a href="/news" class="block text-sm px-2 py-4 hover:bg-green-500 hover:text-white transition duration-300 {% if active_page == 'news' %}bg-green-500 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}" {% if active_page == 'news' %}aria-current="page"{% endif %}>News Feed</a></li>
+                <li><a href="/stocks" class="block text-sm px-2 py-4 hover:bg-green-500 hover:text-white transition duration-300 {% if active_page == 'stocks' %}bg-green-500 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}" {% if active_page == 'stocks' %}aria-current="page"{% endif %}>Tag Cloud</a></li>
+                <li><a href="/infos" class="block text-sm px-2 py-4 hover:bg-green-500 hover:text-white transition duration-300 {% if active_page == 'infos' %}bg-green-500 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}" {% if active_page == 'infos' %}aria-current="page"{% endif %}>Info Frequency</a></li>
+                <li><a href="/ecm" class="block text-sm px-2 py-4 hover:bg-green-500 hover:text-white transition duration-300 {% if active_page == 'ecm' %}bg-green-500 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}" {% if active_page == 'ecm' %}aria-current="page"{% endif %}>ECM (Pi Cycle)</a></li>
+                <li><a href="/hkex" class="block text-sm px-2 py-4 hover:bg-green-500 hover:text-white transition duration-300 {% if active_page == 'hkex' %}bg-green-500 text-white{% else %}text-gray-700 dark:text-gray-300{% endif %}" {% if active_page == 'hkex' %}aria-current="page"{% endif %}>HKEX Filings</a></li>
             </ul>
         </div>
     </nav>
